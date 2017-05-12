@@ -1,0 +1,165 @@
+{
+  "places": [
+    {
+      "name": "South San Francisco",
+      "latlon": [
+        37.654664,
+        -122.407458
+      ]
+    },
+    {
+      "name": "Forest Hill",
+      "latlon": [
+        37.74743,
+        -122.465994
+      ]
+    },
+    {
+      "name": "Portola",
+      "latlon": [
+        37.729918,
+        -122.410033
+      ]
+    },
+    {
+      "name": "Hunters Point",
+      "latlon": [
+        37.727746,
+        -122.370207
+      ]
+    },
+    {
+      "name": "Visitacion Valley",
+      "latlon": [
+        37.717562,
+        -122.405398
+      ]
+    },
+    {
+      "name": "Crocker-Amazon",
+      "latlon": [
+        37.71213,
+        -122.438357
+      ]
+    },
+    {
+      "name": "Daly City",
+      "latlon": [
+        37.688226,
+        -122.470458
+      ]
+    },
+    {
+      "name": "Haight-Ashbury",
+      "latlon": [
+        37.769551,
+        -122.448485
+      ]
+    },
+    {
+      "name": "Castro",
+      "latlon": [
+        37.761002,
+        -122.435267
+      ]
+    },
+    {
+      "name": "Noe Valley",
+      "latlon": [
+        37.750416,
+        -122.434065
+      ]
+    },
+    {
+      "name": "Bernal Heights",
+      "latlon": [
+        37.741457,
+        -122.417243
+      ]
+    },
+    {
+      "name": "Mission",
+      "latlon": [
+        37.761002,
+        -122.415354
+      ]
+    },
+    {
+      "name": "Glen Park",
+      "latlon": [
+        37.738064,
+        -122.432864
+      ]
+    },
+    {
+      "name": "Richmond",
+      "latlon": [
+        37.780406,
+        -122.477839
+      ]
+    },
+    {
+      "name": "Embarcadero",
+      "latlon": [
+        37.799263,
+        -122.397673
+      ]
+    },
+    {
+      "name": "North Beach",
+      "latlon": [
+        37.806451,
+        -122.410719
+      ]
+    },
+    {
+      "name": "Financial District",
+      "latlon": [
+        37.794922,
+        -122.399905
+      ]
+    },
+    {
+      "name": "SOMA",
+      "latlon": [
+        37.778778,
+        -122.405741
+      ]
+    },
+    {
+      "name": "Dogpatch",
+      "latlon": [
+        37.759509,
+        -122.390635
+      ]
+    },
+    {
+      "name": "Richmond",
+      "latlon": [
+        37.780406,
+        -122.477839
+      ]
+    },
+    {
+      "name": "Outer Richmond",
+      "latlon": [
+        37.777828,
+        -122.496207
+      ]
+    },
+    {
+      "name": "Inner Sunset",
+      "latlon": [
+        37.761274,
+        -122.466681
+      ]
+    },
+    {
+      "name": "Outer Sunset",
+      "latlon": [
+        37.755845,
+        -122.492945
+      ]
+    }
+  ]
+}
