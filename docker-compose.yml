@@ -1,0 +1,29 @@
+version: '3'
+services:
+  server:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: temp-server
+    depends_on:
+      - db
+    environment:
+      - NODE_ENV
+      - CONFIG_S3_UPLOAD
+      - CONFIG_SCHEDULE
+      - CONFIG_TWEET
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - NETATMO_BASE_URL
+      - NETATMO_CLIENT_ID
+      - NETATMO_CLIENT_SECRET
+      - NETATMO_REFRESH_TOKEN
+      - POSTGRES_CONNECTION_STRING
+      - TWITTER_ACCESS_TOKEN_KEY
+      - TWITTER_ACCESS_TOKEN_SECRET
+      - TWITTER_CONSUMER_KEY
+      - TWITTER_CONSUMER_SECRET
+    restart: always
+
+  db:
+    image: mattb/postgis-water
