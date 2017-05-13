@@ -135,7 +135,11 @@ const generateMap = () => {
         const variogram = kriging.train(t, x, y, model, sigma2, alpha);
 
         const output = {
-          points: [],
+          d3: {
+            scale: proj.scale(),
+            translate: proj.translate()
+          },
+          // points: [],
           places: places.map(p => {
             const xy = proj([p.latlon[1], p.latlon[0]]);
             return Object.assign({}, p, {
@@ -163,9 +167,9 @@ const generateMap = () => {
             canvasData.data[index + 2] = color[2];
             canvasData.data[index + 3] = 255;
           }
-          if (line.length > 0) {
+          /* if (line.length > 0) {
             output.points.push(line);
-          }
+          }*/
         }
         context.putImageData(canvasData, 0, 0);
 
@@ -177,25 +181,44 @@ const generateMap = () => {
         tweet(canvas.toBuffer());
         const filenameBase = `temps-${new Date().toISOString()}`;
         if (process.env.CONFIG_S3_UPLOAD === 'yes') {
-          const put1 = s3
-            .putObject({
-              Bucket: 'tempmap',
-              Key: `${filenameBase}.png`,
-              Body: canvas.toBuffer(),
-              ContentType: 'image/png',
-              ACL: 'public-read'
-            })
-            .promise();
-          const put2 = s3
-            .putObject({
-              Bucket: 'tempmap',
-              Key: `${filenameBase}.json`,
-              Body: JSON.stringify(output, null, 2),
-              ContentType: 'application/json',
-              ACL: 'public-read'
-            })
-            .promise();
-          Promise.all([put1, put2])
+          Promise.all([
+            s3
+              .putObject({
+                Bucket: 'tempmap',
+                Key: 'temps.png',
+                Body: canvas.toBuffer(),
+                ContentType: 'image/png',
+                ACL: 'public-read'
+              })
+              .promise(),
+            s3
+              .putObject({
+                Bucket: 'tempmap',
+                Key: `${filenameBase}.png`,
+                Body: canvas.toBuffer(),
+                ContentType: 'image/png',
+                ACL: 'public-read'
+              })
+              .promise(),
+            s3
+              .putObject({
+                Bucket: 'tempmap',
+                Key: 'temps.json',
+                Body: JSON.stringify(output, null, 2),
+                ContentType: 'application/json',
+                ACL: 'public-read'
+              })
+              .promise(),
+            s3
+              .putObject({
+                Bucket: 'tempmap',
+                Key: `${filenameBase}.json`,
+                Body: JSON.stringify(output, null, 2),
+                ContentType: 'application/json',
+                ACL: 'public-read'
+              })
+              .promise()
+          ])
             .then(() => console.log('Uploaded'))
             .catch(err => console.log('Upload error', err));
         } else {
