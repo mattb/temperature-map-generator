@@ -150,10 +150,12 @@ const generateMap = () => {
           })
         };
         const canvasData = context.getImageData(0, 0, width, height);
+        const predictions = [];
         for (let ypos = 0; ypos < height; ypos += 1) {
           const line = [];
           for (let xpos = 0; xpos < height; xpos += 1) {
             const val = kriging.predict(xpos, ypos, variogram);
+            predictions.push(val);
             if (xpos % 10 === 0 && ypos % 10 === 0) {
               line.push({
                 ll: proj.invert([xpos, ypos]).map(l => l.toFixed(4)),
@@ -172,6 +174,16 @@ const generateMap = () => {
           }*/
         }
         context.putImageData(canvasData, 0, 0);
+
+        output.timestamp = new Date().toISOString();
+        output.average_in_c =
+          predictions.reduce((a, b) => a + b) / predictions.length;
+        output.min_in_c = predictions
+          .reduce((a, b) => Math.min(a, b))
+          .toFixed(1);
+        output.max_in_c = predictions
+          .reduce((a, b) => Math.max(a, b))
+          .toFixed(1);
 
         context.fillStyle = 'lightblue';
         context.beginPath();
