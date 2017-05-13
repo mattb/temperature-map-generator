@@ -103,7 +103,7 @@ const generateMap = () => {
   const colors = chroma
     .scale('Spectral')
     .mode('lab')
-    .colors(120, 'rgb')
+    .colors(60, 'rgb')
     .reverse();
 
   readPlaces().then(places => {
@@ -163,7 +163,7 @@ const generateMap = () => {
               });
             }
             const index = (xpos + ypos * width) * 4;
-            const color = colors[Math.floor(2 * (val + 20))];
+            const color = colors[Math.floor(1 * (val + 20))];
             canvasData.data[index] = color[0];
             canvasData.data[index + 1] = color[1];
             canvasData.data[index + 2] = color[2];
