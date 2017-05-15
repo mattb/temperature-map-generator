@@ -20,3 +20,5 @@ yarn-error.log*
 .next
 tags
 *.vtt
+out.png
+out.json
