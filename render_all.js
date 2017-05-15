@@ -99,13 +99,10 @@ const getData = accessToken => {
   });
 };
 
-const generateMap = () => {
-  const colors = chroma
-    .scale('Spectral')
-    .mode('lab')
-    .colors(60, 'rgb')
-    .reverse();
+const colors = chroma.scale('Spectral').mode('lab').domain([32, -10]);
+const colorForTemperature = c => colors(Math.round(c)).rgb();
 
+const generateMap = () => {
   readPlaces().then(places => {
     get_water_polygons({
       lon_min: sw[1],
@@ -135,6 +132,10 @@ const generateMap = () => {
         const variogram = kriging.train(t, x, y, model, sigma2, alpha);
 
         const output = {
+          temperature_color_scale: Array.from(
+            { length: 60 },
+            (_, key) => key - 20
+          ).map(i => [i, colorForTemperature(i)]),
           d3: {
             scale: proj.scale(),
             translate: proj.translate()
@@ -163,7 +164,7 @@ const generateMap = () => {
               });
             }
             const index = (xpos + ypos * width) * 4;
-            const color = colors[Math.floor(1 * (val + 20))];
+            const color = colorForTemperature(val);
             canvasData.data[index] = color[0];
             canvasData.data[index + 1] = color[1];
             canvasData.data[index + 2] = color[2];
