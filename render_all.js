@@ -193,6 +193,7 @@ const generateMap = () => {
 
         tweet(canvas.toBuffer());
         const filenameBase = `temps-${new Date().toISOString()}`;
+        output.png = `${filenameBase}.png`;
         if (process.env.CONFIG_S3_UPLOAD === 'yes') {
           Promise.all([
             s3
