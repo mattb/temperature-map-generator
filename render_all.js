@@ -12,6 +12,8 @@ const Twitter = require('twitter');
 const schedule = require('node-schedule');
 const process = require('process');
 const fs = Promise.promisifyAll(require('fs'));
+const imagemin = require('imagemin');
+const imageminOptipng = require('imagemin-optipng');
 
 const tweet = png => {
   if (process.env.CONFIG_TWEET !== 'yes') {
@@ -191,56 +193,60 @@ const generateMap = () => {
         path(json);
         context.fill();
 
-        tweet(canvas.toBuffer());
-        const filenameBase = `temps-${new Date().toISOString()}`;
-        output.png = `${filenameBase}.png`;
-        if (process.env.CONFIG_S3_UPLOAD === 'yes') {
-          Promise.all([
-            s3
-              .putObject({
-                Bucket: 'tempmap',
-                Key: 'temps.png',
-                Body: canvas.toBuffer(),
-                ContentType: 'image/png',
-                ACL: 'public-read'
-              })
-              .promise(),
-            s3
-              .putObject({
-                Bucket: 'tempmap',
-                Key: `${filenameBase}.png`,
-                Body: canvas.toBuffer(),
-                ContentType: 'image/png',
-                ACL: 'public-read'
-              })
-              .promise(),
-            s3
-              .putObject({
-                Bucket: 'tempmap',
-                Key: 'temps.json',
-                Body: JSON.stringify(output, null, 2),
-                ContentType: 'application/json',
-                ACL: 'public-read'
-              })
-              .promise(),
-            s3
-              .putObject({
-                Bucket: 'tempmap',
-                Key: `${filenameBase}.json`,
-                Body: JSON.stringify(output, null, 2),
-                ContentType: 'application/json',
-                ACL: 'public-read'
-              })
-              .promise()
-          ])
-            .then(() => console.log('Uploaded'))
-            .catch(err => console.log('Upload error', err));
-        } else {
-          Promise.all([
-            fs.writeFileAsync('out.png', canvas.toBuffer()),
-            fs.writeFileAsync('out.json', JSON.stringify(output, null, 2))
-          ]).then(() => console.log('Written files'));
-        }
+        imagemin
+          .buffer(canvas.toBuffer(), { use: [imageminOptipng()] })
+          .then(pngBuffer => {
+            tweet(pngBuffer);
+            const filenameBase = `temps-${new Date().toISOString()}`;
+            output.png = `${filenameBase}.png`;
+            if (process.env.CONFIG_S3_UPLOAD === 'yes') {
+              Promise.all([
+                s3
+                  .putObject({
+                    Bucket: 'tempmap',
+                    Key: 'temps.png',
+                    Body: pngBuffer,
+                    ContentType: 'image/png',
+                    ACL: 'public-read'
+                  })
+                  .promise(),
+                s3
+                  .putObject({
+                    Bucket: 'tempmap',
+                    Key: `${filenameBase}.png`,
+                    Body: pngBuffer,
+                    ContentType: 'image/png',
+                    ACL: 'public-read'
+                  })
+                  .promise(),
+                s3
+                  .putObject({
+                    Bucket: 'tempmap',
+                    Key: 'temps.json',
+                    Body: JSON.stringify(output, null, 2),
+                    ContentType: 'application/json',
+                    ACL: 'public-read'
+                  })
+                  .promise(),
+                s3
+                  .putObject({
+                    Bucket: 'tempmap',
+                    Key: `${filenameBase}.json`,
+                    Body: JSON.stringify(output, null, 2),
+                    ContentType: 'application/json',
+                    ACL: 'public-read'
+                  })
+                  .promise()
+              ])
+                .then(() => console.log('Uploaded'))
+                .catch(err => console.log('Upload error', err));
+            } else {
+              Promise.all([
+                fs.writeFileAsync('out.png', pngBuffer),
+                fs.writeFileAsync('out.json', JSON.stringify(output, null, 2))
+              ]).then(() => console.log('Written files'));
+            }
+          });
       });
     });
   });
