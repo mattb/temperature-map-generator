@@ -98,7 +98,10 @@ const getData = accessToken => {
         }
       });
     });
-    return temps;
+    const allTemps = temps.map(t => t[2]);
+    allTemps.sort((a, b) => a - b);
+    const upperCutoff = allTemps[Math.round(allTemps.length * 0.96)];
+    return temps.filter(t => t[2] < upperCutoff);
   });
 };
 
