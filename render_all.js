@@ -14,6 +14,7 @@ const process = require('process');
 const fs = Promise.promisifyAll(require('fs'));
 const imagemin = require('imagemin');
 const imageminOptipng = require('imagemin-optipng');
+const zlib = Promise.promisifyAll(require('zlib'));
 
 const tweet = png => {
   if (process.env.CONFIG_TWEET !== 'yes') {
@@ -193,60 +194,64 @@ const generateMap = () => {
         path(json);
         context.fill();
 
-        imagemin
-          .buffer(canvas.toBuffer(), { use: [imageminOptipng()] })
-          .then(pngBuffer => {
-            tweet(pngBuffer);
-            const filenameBase = `temps-${new Date().toISOString()}`;
-            output.png = `${filenameBase}.png`;
-            if (process.env.CONFIG_S3_UPLOAD === 'yes') {
-              Promise.all([
-                s3
-                  .putObject({
-                    Bucket: 'tempmap',
-                    Key: 'temps.png',
-                    Body: pngBuffer,
-                    ContentType: 'image/png',
-                    ACL: 'public-read'
-                  })
-                  .promise(),
-                s3
-                  .putObject({
-                    Bucket: 'tempmap',
-                    Key: `${filenameBase}.png`,
-                    Body: pngBuffer,
-                    ContentType: 'image/png',
-                    ACL: 'public-read'
-                  })
-                  .promise(),
-                s3
-                  .putObject({
-                    Bucket: 'tempmap',
-                    Key: 'temps.json',
-                    Body: JSON.stringify(output, null, 2),
-                    ContentType: 'application/json',
-                    ACL: 'public-read'
-                  })
-                  .promise(),
-                s3
-                  .putObject({
-                    Bucket: 'tempmap',
-                    Key: `${filenameBase}.json`,
-                    Body: JSON.stringify(output, null, 2),
-                    ContentType: 'application/json',
-                    ACL: 'public-read'
-                  })
-                  .promise()
-              ])
-                .then(() => console.log('Uploaded'))
-                .catch(err => console.log('Upload error', err));
-            } else {
-              Promise.all([
-                fs.writeFileAsync('out.png', pngBuffer),
-                fs.writeFileAsync('out.json', JSON.stringify(output, null, 2))
-              ]).then(() => console.log('Written files'));
-            }
-          });
+        const filenameBase = `temps-${new Date().toISOString()}`;
+        output.png = `${filenameBase}.png`;
+        zlib.gzipAsync(JSON.stringify(output, null, 2)).then(gzipJson => {
+          imagemin
+            .buffer(canvas.toBuffer(), { use: [imageminOptipng()] })
+            .then(pngBuffer => {
+              tweet(pngBuffer);
+              if (process.env.CONFIG_S3_UPLOAD === 'yes') {
+                Promise.all([
+                  s3
+                    .putObject({
+                      Bucket: 'tempmap',
+                      Key: 'temps.png',
+                      Body: pngBuffer,
+                      ContentType: 'image/png',
+                      ACL: 'public-read'
+                    })
+                    .promise(),
+                  s3
+                    .putObject({
+                      Bucket: 'tempmap',
+                      Key: `${filenameBase}.png`,
+                      Body: pngBuffer,
+                      ContentType: 'image/png',
+                      ACL: 'public-read'
+                    })
+                    .promise(),
+                  s3
+                    .putObject({
+                      Bucket: 'tempmap',
+                      Key: 'temps.json',
+                      Body: gzipJson,
+                      ContentEncoding: 'gzip',
+                      ContentType: 'application/json',
+                      ACL: 'public-read'
+                    })
+                    .promise(),
+                  s3
+                    .putObject({
+                      Bucket: 'tempmap',
+                      Key: `${filenameBase}.json`,
+                      Body: gzipJson,
+                      ContentEncoding: 'gzip',
+                      ContentType: 'application/json',
+                      ACL: 'public-read'
+                    })
+                    .promise()
+                ])
+                  .then(() => console.log('Uploaded'))
+                  .catch(err => console.log('Upload error', err));
+              } else {
+                Promise.all([
+                  fs.writeFileAsync('out.png', pngBuffer),
+                  fs.writeFileAsync('out.json', JSON.stringify(output, null, 2))
+                ]).then(() => console.log('Written files'));
+              }
+            });
+        });
       });
     });
   });
