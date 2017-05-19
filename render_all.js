@@ -16,7 +16,9 @@ const imagemin = require('imagemin');
 const imageminOptipng = require('imagemin-optipng');
 const zlib = Promise.promisifyAll(require('zlib'));
 
-const tweet = png => {
+const cToF = c => Math.round(c * 9.0 / 5.0 + 32);
+
+const tweet = (png, data) => {
   if (process.env.CONFIG_TWEET !== 'yes') {
     return;
   }
@@ -29,7 +31,7 @@ const tweet = png => {
   client.post('media/upload', { media: png }, (error, media) => {
     if (!error) {
       const status = {
-        status: 'Temperatures in San Francisco right now',
+        status: `Temperatures in San Francisco right now: ${Math.round(data.min_in_c)}C/${cToF(data.min_in_c)}F min, ${Math.round(data.average_in_c)}C/${cToF(data.average_in_c)}F average, ${Math.round(data.max_in_c)}C/${cToF(data.max_in_c)}F max`,
         media_ids: media.media_id_string // Pass the media id string
       };
 
@@ -203,7 +205,7 @@ const generateMap = () => {
           imagemin
             .buffer(canvas.toBuffer(), { use: [imageminOptipng()] })
             .then(pngBuffer => {
-              tweet(pngBuffer);
+              tweet(pngBuffer, output);
               if (process.env.CONFIG_S3_UPLOAD === 'yes') {
                 Promise.all([
                   s3
