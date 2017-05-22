@@ -1,4 +1,10 @@
 {
+  "width": 750,
+  "height": 1334,
+  "frame": {
+    "ne": [37.870226, -122.358991],
+    "sw": [37.632867, -122.527905]
+  },
   "places": [
     {
       "name": "South San Francisco",

@@ -50,14 +50,9 @@ const tweet = (png, data) => {
   });
 };
 
-const width = 750;
-const height = 1334;
-
-const ne = [37.870226, -122.358991];
-const sw = [37.632867, -122.527905];
-
-const readPlaces = () =>
-  fs.readFileAsync('neighborhoods.json').then(f => JSON.parse(f).places);
+const readConfig = fs
+  .readFileAsync('neighborhoods.json')
+  .then(f => JSON.parse(f));
 
 const s3 = (() => {
   const credentials = new AWS.Credentials(
@@ -84,8 +79,8 @@ const token = () => {
     .then(result => result.access_token);
 };
 
-const getData = accessToken => {
-  const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${ne[0]}&lon_ne=${ne[1]}&lat_sw=${sw[0]}&lon_sw=${sw[1]}`;
+const getData = (accessToken, frame) => {
+  const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame.ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
   return fetch(url).then(r => r.json()).then(result => {
     const temps = [];
     result.body.forEach(r => {
@@ -111,12 +106,13 @@ const colors = chroma.scale('Spectral').mode('lab').domain([32, -10]);
 const colorForTemperature = c => colors(Math.round(c)).rgb();
 
 const generateMap = () => {
-  readPlaces().then(places => {
+  readConfig().then(configData => {
+    const { places, frame, width, height } = configData;
     get_water_polygons({
-      lon_min: sw[1],
-      lat_min: sw[0],
-      lon_max: ne[1],
-      lat_max: ne[0]
+      lon_min: frame.sw[1],
+      lat_min: frame.sw[0],
+      lon_max: frame.ne[1],
+      lat_max: frame.ne[0]
     }).then(json => {
       const canvas = new Canvas(width, height);
       const context = canvas.getContext('2d');
@@ -124,7 +120,7 @@ const generateMap = () => {
       proj.fitSize([width, height], json);
       const path = d3.geoPath().projection(proj).context(context);
 
-      token().then(t => getData(t)).then(data => {
+      token().then(t => getData(t, frame)).then(data => {
         const points = [];
         data.forEach(d => {
           const xy = proj([d[0], d[1]]);
