@@ -22,3 +22,5 @@ tags
 *.vtt
 out.png
 out.json
+out.mp4
+frame*.png
