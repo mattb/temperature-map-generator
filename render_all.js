@@ -50,7 +50,8 @@ const tweet = (png, data) => {
   });
 };
 
-const readConfig = () => fs.readFileAsync('eastbay.json').then(f => JSON.parse(f));
+const readConfig = () =>
+  fs.readFileAsync('sf.json').then(f => JSON.parse(f));
 
 const s3 = (() => {
   const credentials = new AWS.Credentials(
