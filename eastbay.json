@@ -8,6 +8,55 @@
   },
   "places": [
     {
+      "name": "Vallejo",
+      "latlon": [
+        38.104086,
+        -122.256637
+      ]
+    },
+    {
+      "name": "Mt Diablo",
+      "latlon": [
+        37.881591,
+        -121.914153
+      ]
+    },
+    {
+      "name": "Hayward",
+      "latlon": [
+        37.668821,
+        -122.080796
+      ]
+    },
+    {
+      "name": "San Leandro",
+      "latlon": [
+        37.72493,
+        -122.156077
+      ]
+    },
+    {
+      "name": "OAK",
+      "latlon": [
+        37.712569,
+        -122.219743
+      ]
+    },
+    {
+      "name": "Alameda",
+      "latlon": [
+        37.765207,
+        -122.241636
+      ]
+    },
+    {
+      "name": "Walnut Creek",
+      "latlon": [
+        37.910078,
+        -122.065182
+      ]
+    },
+    {
       "name": "Oakland",
       "latlon": [
         37.806145,

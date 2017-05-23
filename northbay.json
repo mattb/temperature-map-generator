@@ -8,10 +8,66 @@
   },
   "places": [
     {
-      "name": "Null Island",
+      "name": "Point Reyes Station",
       "latlon": [
-        0,
-        0
+        38.069089,
+        -122.806936
+      ]
+    },
+    {
+      "name": "Sebastopol",
+      "latlon": [
+        38.402136,
+        -122.823881
+      ]
+    },
+    {
+      "name": "Sonoma",
+      "latlon": [
+        38.291859,
+        -122.458036
+      ]
+    },
+    {
+      "name": "Petaluma",
+      "latlon": [
+        38.232417,
+        -122.636652
+      ]
+    },
+    {
+      "name": "Novato",
+      "latlon": [
+        38.10742,
+        -122.569703
+      ]
+    },
+    {
+      "name": "San Rafael",
+      "latlon": [
+        37.973535,
+        -122.531087
+      ]
+    },
+    {
+      "name": "Stinson Beach",
+      "latlon": [
+        37.900482,
+        -122.644426
+      ]
+    },
+    {
+      "name": "Santa Rosa",
+      "latlon": [
+        38.440429,
+        -122.714055
+      ]
+    },
+    {
+      "name": "Mill Valley",
+      "latlon": [
+        37.906037,
+        -122.544976
       ]
     }
   ]
