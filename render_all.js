@@ -269,7 +269,9 @@ const generateMap = (configName, accessToken) =>
           imagemin
             .buffer(canvas.toBuffer(), { use: [imageminOptipng()] })
             .then(pngBuffer => {
-              tweet(pngBuffer, output);
+              if (configName === 'sf') {
+                tweet(pngBuffer, output);
+              }
               if (process.env.CONFIG_S3_UPLOAD === 'yes') {
                 s3Upload(configData, filenameBase, pngBuffer, gzipJson);
               } else {
