@@ -50,8 +50,6 @@ const tweet = (png, data) => {
   });
 };
 
-const readConfig = () => fs.readFileAsync('sf.json').then(f => JSON.parse(f));
-
 const s3 = (() => {
   const credentials = new AWS.Credentials(
     process.env.AWS_ACCESS_KEY_ID,
@@ -61,6 +59,53 @@ const s3 = (() => {
   config.update({ credentials });
   return new AWS.S3(config);
 })();
+
+const s3Upload = (configData, filenameBase, pngBuffer, gzipJson) =>
+  Promise.all([
+    s3
+      .putObject({
+        Bucket: 'tempmap',
+        Key: `${configData.filename}.png`,
+        Body: pngBuffer,
+        ContentType: 'image/png',
+        ACL: 'public-read'
+      })
+      .promise(),
+    s3
+      .putObject({
+        Bucket: 'tempmap',
+        Key: `${filenameBase}.png`,
+        Body: pngBuffer,
+        ContentType: 'image/png',
+        ACL: 'public-read'
+      })
+      .promise(),
+    s3
+      .putObject({
+        Bucket: 'tempmap',
+        Key: `${configData.filename}.json`,
+        Body: gzipJson,
+        ContentEncoding: 'gzip',
+        ContentType: 'application/json',
+        ACL: 'public-read'
+      })
+      .promise(),
+    s3
+      .putObject({
+        Bucket: 'tempmap',
+        Key: `${filenameBase}.json`,
+        Body: gzipJson,
+        ContentEncoding: 'gzip',
+        ContentType: 'application/json',
+        ACL: 'public-read'
+      })
+      .promise()
+  ])
+    .then(() => console.log(`${configData.filename}: Uploaded`))
+    .catch(err => console.log('Upload error', err));
+
+const readConfig = configName =>
+  fs.readFileAsync(`${configName}.json`).then(f => JSON.parse(f));
 
 const token = () => {
   const form = new FormData();
@@ -103,10 +148,11 @@ const getData = (accessToken, frame) => {
 const colors = chroma.scale('Spectral').mode('lab').domain([32, -10]);
 const colorForTemperature = c => colors(Math.round(c)).rgb();
 
-const generateMap = () => {
-  readConfig().then(configData => {
+const generateMap = (configName, accessToken) =>
+  readConfig(configName).then(configData => {
+    console.log('Generating', configName);
     const { places, frame, width, height } = configData;
-    get_water_polygons({
+    return get_water_polygons({
       lon_min: frame.sw[1],
       lat_min: frame.sw[0],
       lon_max: frame.ne[1],
@@ -142,7 +188,7 @@ const generateMap = () => {
       */
       const path = d3.geoPath().projection(proj).context(context);
 
-      token().then(t => getData(t, frame)).then(data => {
+      return getData(accessToken, frame).then(data => {
         const points = [];
         data.forEach(d => {
           const xy = proj([d[0], d[1]]);
@@ -217,7 +263,7 @@ const generateMap = () => {
         path(json);
         context.fill();
 
-        const filenameBase = `temps-${new Date().toISOString()}`;
+        const filenameBase = `${configData.filename}-${new Date().toISOString()}`;
         output.png = `${filenameBase}.png`;
         zlib.gzipAsync(JSON.stringify(output, null, 2)).then(gzipJson => {
           imagemin
@@ -225,67 +271,36 @@ const generateMap = () => {
             .then(pngBuffer => {
               tweet(pngBuffer, output);
               if (process.env.CONFIG_S3_UPLOAD === 'yes') {
-                Promise.all([
-                  s3
-                    .putObject({
-                      Bucket: 'tempmap',
-                      Key: 'temps.png',
-                      Body: pngBuffer,
-                      ContentType: 'image/png',
-                      ACL: 'public-read'
-                    })
-                    .promise(),
-                  s3
-                    .putObject({
-                      Bucket: 'tempmap',
-                      Key: `${filenameBase}.png`,
-                      Body: pngBuffer,
-                      ContentType: 'image/png',
-                      ACL: 'public-read'
-                    })
-                    .promise(),
-                  s3
-                    .putObject({
-                      Bucket: 'tempmap',
-                      Key: 'temps.json',
-                      Body: gzipJson,
-                      ContentEncoding: 'gzip',
-                      ContentType: 'application/json',
-                      ACL: 'public-read'
-                    })
-                    .promise(),
-                  s3
-                    .putObject({
-                      Bucket: 'tempmap',
-                      Key: `${filenameBase}.json`,
-                      Body: gzipJson,
-                      ContentEncoding: 'gzip',
-                      ContentType: 'application/json',
-                      ACL: 'public-read'
-                    })
-                    .promise()
-                ])
-                  .then(() => console.log('Uploaded'))
-                  .catch(err => console.log('Upload error', err));
+                s3Upload(configData, filenameBase, pngBuffer, gzipJson);
               } else {
                 Promise.all([
-                  fs.writeFileAsync('out.png', pngBuffer),
-                  fs.writeFileAsync('out.json', JSON.stringify(output, null, 2))
-                ]).then(() => console.log('Written files'));
+                  fs.writeFileAsync(
+                    `output/${configData.filename}.png`,
+                    pngBuffer
+                  ),
+                  fs.writeFileAsync(
+                    `output/${configData.filename}.json`,
+                    JSON.stringify(output, null, 2)
+                  )
+                ]).then(() => console.log(`${configName}: Written files`));
               }
             });
         });
       });
     });
   });
-};
+
+const generate = () =>
+  token().then(t =>
+    Promise.each(['sf', 'eastbay', 'northbay', 'southbay'], config =>
+      generateMap(config, t)
+    )
+  );
 
 if (process.env.CONFIG_SCHEDULE === 'yes') {
   schedule.scheduleJob('0 * * * *', () => {
-    console.log('Generating...');
-    generateMap();
+    generate();
   });
 } else {
-  console.log('Generating...');
-  generateMap();
+  generate();
 }

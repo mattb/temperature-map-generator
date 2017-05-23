@@ -1,4 +1,5 @@
 {
+  "filename": "southbay",
   "width": 750,
   "height": 1334,
   "frame": {
@@ -6,6 +7,41 @@
     "sw": [36.522,-122.54986]
   },
   "places": [
+    {
+      "name": "Swanton",
+      "latlon": [
+        37.06417,
+        -122.22639
+      ]
+    },
+    {
+      "name": "Pescadero",
+      "latlon": [
+        37.255164,
+        -122.383015
+      ]
+    },
+    {
+      "name": "Mountain View",
+      "latlon": [
+        37.386052,
+        -122.083851
+      ]
+    },
+    {
+      "name": "Los Gatos",
+      "latlon": [
+        37.235808,
+        -121.962375
+      ]
+    },
+    {
+      "name": "San Mateo",
+      "latlon": [
+        37.562992,
+        -122.325525
+      ]
+    },
     {
       "name": "Half Moon Bay",
       "latlon": [
