@@ -50,8 +50,7 @@ const tweet = (png, data) => {
   });
 };
 
-const readConfig = () =>
-  fs.readFileAsync('sf.json').then(f => JSON.parse(f));
+const readConfig = () => fs.readFileAsync('sf.json').then(f => JSON.parse(f));
 
 const s3 = (() => {
   const credentials = new AWS.Credentials(
@@ -116,7 +115,31 @@ const generateMap = () => {
       const canvas = new Canvas(width, height);
       const context = canvas.getContext('2d');
       const proj = d3.geoMercator();
-      proj.fitSize([width, height], json);
+      proj.fitSize([width, height], {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [frame.sw[1], frame.sw[0]]
+            }
+          },
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [frame.ne[1], frame.ne[0]]
+            }
+          }
+        ]
+      });
+      /*
+      console.log(
+        proj([frame.sw[1], frame.ne[0]]).map(x => Math.round(x)),
+        proj([frame.ne[1], frame.sw[0]]).map(x => Math.round(x))
+      );
+      */
       const path = d3.geoPath().projection(proj).context(context);
 
       token().then(t => getData(t, frame)).then(data => {
