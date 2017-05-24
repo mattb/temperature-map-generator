@@ -148,6 +148,58 @@ const getData = (accessToken, frame) => {
 const colors = chroma.scale('Spectral').mode('lab').domain([32, -10]);
 const colorForTemperature = c => colors(Math.round(c)).rgb();
 
+const drawGeoJson = (context, geoJson, projection, fillStyle) => {
+  const path = d3.geoPath().projection(projection).context(context);
+  context.fillStyle = fillStyle; // eslint-disable-line no-param-reassign
+  context.beginPath();
+  path(geoJson);
+  context.fill();
+};
+
+const trainKriging = (data, projection) => {
+  const points = [];
+  data.forEach(d => {
+    const xy = projection([d[0], d[1]]);
+    points.push([xy[0], xy[1], d[2]]);
+  });
+
+  const x = points.map(d => d[0]);
+  const y = points.map(d => d[1]);
+  const t = points.map(d => d[2]);
+  const model = 'exponential';
+  const sigma2 = 0;
+  const alpha = 100;
+  return kriging.train(t, x, y, model, sigma2, alpha);
+};
+
+const makeProjection = (width, height, frame) =>
+  d3.geoMercator().fitSize([width, height], {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [frame.sw[1], frame.sw[0]]
+        }
+      },
+      {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [frame.ne[1], frame.ne[0]]
+        }
+      }
+    ]
+  });
+
+/*
+console.log(
+  proj([frame.sw[1], frame.ne[0]]).map(x => Math.round(x)),
+  proj([frame.ne[1], frame.sw[0]]).map(x => Math.round(x))
+);
+*/
+
 const generateMap = (configName, accessToken) =>
   readConfig(configName).then(configData => {
     console.log('Generating', configName);
@@ -157,72 +209,14 @@ const generateMap = (configName, accessToken) =>
       lat_min: frame.sw[0],
       lon_max: frame.ne[1],
       lat_max: frame.ne[0]
-    }).then(json => {
+    }).then(geoJson => {
       const canvas = new Canvas(width, height);
       const context = canvas.getContext('2d');
-      const proj = d3.geoMercator();
-      proj.fitSize([width, height], {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [frame.sw[1], frame.sw[0]]
-            }
-          },
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [frame.ne[1], frame.ne[0]]
-            }
-          }
-        ]
-      });
-      /*
-      console.log(
-        proj([frame.sw[1], frame.ne[0]]).map(x => Math.round(x)),
-        proj([frame.ne[1], frame.sw[0]]).map(x => Math.round(x))
-      );
-      */
-      const path = d3.geoPath().projection(proj).context(context);
-
+      const proj = makeProjection(width, height, frame);
       return getData(accessToken, frame).then(data => {
-        const points = [];
-        data.forEach(d => {
-          const xy = proj([d[0], d[1]]);
-          points.push([xy[0], xy[1], d[2]]);
-        });
-
-        const x = points.map(d => d[0]);
-        const y = points.map(d => d[1]);
-        const t = points.map(d => d[2]);
-        const model = 'exponential';
-        const sigma2 = 0;
-        const alpha = 100;
-        const variogram = kriging.train(t, x, y, model, sigma2, alpha);
-
-        const output = {
-          temperature_color_scale: Array.from(
-            { length: 60 },
-            (_, key) => key - 20
-          ).map(i => [i, colorForTemperature(i)]),
-          d3: {
-            scale: proj.scale(),
-            translate: proj.translate()
-          },
-          // points: [],
-          places: places.map(p => {
-            const xy = proj([p.latlon[1], p.latlon[0]]);
-            return Object.assign({}, p, {
-              temp_in_c: kriging.predict(xy[0], xy[1], variogram).toFixed(1),
-              x: xy[0].toFixed(0),
-              y: xy[1].toFixed(1)
-            });
-          })
-        };
         const canvasData = context.getImageData(0, 0, width, height);
+
+        const variogram = trainKriging(data, proj);
         const predictions = [];
         for (let ypos = 0; ypos < height; ypos += 1) {
           const line = [];
@@ -242,29 +236,40 @@ const generateMap = (configName, accessToken) =>
             canvasData.data[index + 2] = color[2];
             canvasData.data[index + 3] = 255;
           }
-          /* if (line.length > 0) {
-            output.points.push(line);
-          }*/
         }
-        context.putImageData(canvasData, 0, 0);
+        if (process.env.CONFIG_SKIP_TEMPERATURES !== 'yes') {
+          context.putImageData(canvasData, 0, 0);
+        }
 
-        output.timestamp = new Date().toISOString();
-        output.average_in_c =
-          predictions.reduce((a, b) => a + b) / predictions.length;
-        output.min_in_c = predictions
-          .reduce((a, b) => Math.min(a, b))
-          .toFixed(1);
-        output.max_in_c = predictions
-          .reduce((a, b) => Math.max(a, b))
-          .toFixed(1);
-
-        context.fillStyle = 'lightblue';
-        context.beginPath();
-        path(json);
-        context.fill();
+        drawGeoJson(context, geoJson, proj, 'lightblue');
 
         const filenameBase = `${configData.filename}-${new Date().toISOString()}`;
-        output.png = `${filenameBase}.png`;
+
+        const output = {
+          temperature_color_scale: Array.from(
+            { length: 60 },
+            (_, key) => key - 20
+          ).map(i => [i, colorForTemperature(i)]),
+          d3: {
+            scale: proj.scale(),
+            translate: proj.translate()
+          },
+          places: places.map(p => {
+            const xy = proj([p.latlon[1], p.latlon[0]]);
+            return Object.assign({}, p, {
+              temp_in_c: kriging.predict(xy[0], xy[1], variogram).toFixed(1),
+              x: xy[0].toFixed(0),
+              y: xy[1].toFixed(1)
+            });
+          }),
+          timestamp: new Date().toISOString(),
+          average_in_c: predictions.reduce((a, b) => a + b) /
+            predictions.length,
+          min_in_c: predictions.reduce((a, b) => Math.min(a, b)).toFixed(1),
+          max_in_c: predictions.reduce((a, b) => Math.max(a, b)).toFixed(1),
+          png: `${filenameBase}.png`
+        };
+
         zlib.gzipAsync(JSON.stringify(output, null, 2)).then(gzipJson => {
           imagemin
             .buffer(canvas.toBuffer(), { use: [imageminOptipng()] })
