@@ -15,8 +15,28 @@ const fs = Promise.promisifyAll(require('fs'));
 const imagemin = require('imagemin');
 const imageminOptipng = require('imagemin-optipng');
 const zlib = Promise.promisifyAll(require('zlib'));
+const ua = require('universal-analytics');
 
 const cToF = c => Math.round(c * 9.0 / 5.0 + 32);
+
+let ga;
+const recordError = message => {
+  if (process.env.GOOGLE_ANALYTICS_ID) {
+    if (!ga) {
+      ga = ua(process.env.GOOGLE_ANALYTICS_ID);
+    }
+    ga.exception(message).send();
+  }
+};
+
+const recordEvent = (category, action) => {
+  if (process.env.GOOGLE_ANALYTICS_ID) {
+    if (!ga) {
+      ga = ua(process.env.GOOGLE_ANALYTICS_ID);
+    }
+    ga.event(category, action).send();
+  }
+};
 
 const tweet = (png, data) => {
   if (process.env.CONFIG_TWEET !== 'yes') {
@@ -101,8 +121,14 @@ const s3Upload = (configData, filenameBase, pngBuffer, gzipJson) =>
       })
       .promise()
   ])
-    .then(() => console.log(`${configData.filename}: Uploaded`))
-    .catch(err => console.log('Upload error', err));
+    .then(() => {
+      recordEvent('Upload', configData.filename);
+      console.log(`${configData.filename}: Uploaded`);
+    })
+    .catch(err => {
+      recordError(`${configData.filename}: ${err.message}`);
+      console.log('Upload error', err);
+    });
 
 const readConfig = configName =>
   fs.readFileAsync(`${configName}.json`).then(f => JSON.parse(f));
