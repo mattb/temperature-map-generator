@@ -299,7 +299,7 @@ const generateMap = (configName, accessToken) =>
 
 const generate = () =>
   token().then(t =>
-    Promise.each(['sf', 'eastbay', 'northbay', 'southbay'], config =>
+    Promise.each(['sf', 'eastbay', 'northbay', 'southbay', 'bayarea'], config =>
       generateMap(config, t)
     )
   );

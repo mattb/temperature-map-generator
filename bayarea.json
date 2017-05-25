@@ -1,0 +1,214 @@
+{
+  "filename": "bayarea",
+  "width": 750,
+  "height": 1334,
+  "frame": {
+    "ne": [38.471376,-121.689296],
+    "sw": [36.522,-123.070924]
+  },
+  "places": [
+    {
+      "name": "Vallejo",
+      "latlon": [
+        38.104086,
+        -122.256637
+      ]
+    },
+    {
+      "name": "Mt Diablo",
+      "latlon": [
+        37.881591,
+        -121.914153
+      ]
+    },
+    {
+      "name": "Hayward",
+      "latlon": [
+        37.668821,
+        -122.080796
+      ]
+    },
+    {
+      "name": "San Leandro",
+      "latlon": [
+        37.72493,
+        -122.156077
+      ]
+    },
+    {
+      "name": "Alameda",
+      "latlon": [
+        37.765207,
+        -122.241636
+      ]
+    },
+    {
+      "name": "Walnut Creek",
+      "latlon": [
+        37.910078,
+        -122.065182
+      ]
+    },
+    {
+      "name": "Oakland",
+      "latlon": [
+        37.806145,
+        -122.272951
+      ]
+    },
+    {
+      "name": "Berkeley",
+      "latlon": [
+        37.872302,
+        -122.275698
+      ]
+    },
+    {
+      "name": "Point Reyes Station",
+      "latlon": [
+        38.069089,
+        -122.806936
+      ]
+    },
+    {
+      "name": "Sebastopol",
+      "latlon": [
+        38.402136,
+        -122.823881
+      ]
+    },
+    {
+      "name": "Sonoma",
+      "latlon": [
+        38.291859,
+        -122.458036
+      ]
+    },
+    {
+      "name": "Petaluma",
+      "latlon": [
+        38.232417,
+        -122.636652
+      ]
+    },
+    {
+      "name": "Novato",
+      "latlon": [
+        38.10742,
+        -122.569703
+      ]
+    },
+    {
+      "name": "San Rafael",
+      "latlon": [
+        37.973535,
+        -122.531087
+      ]
+    },
+    {
+      "name": "Santa Rosa",
+      "latlon": [
+        38.440429,
+        -122.714055
+      ]
+    },
+    {
+      "name": "Mill Valley",
+      "latlon": [
+        37.906037,
+        -122.544976
+      ]
+    },
+    {
+      "name": "Daly City",
+      "latlon": [
+        37.688226,
+        -122.470458
+      ]
+    },
+    {
+      "name": "Mission",
+      "latlon": [
+        37.761002,
+        -122.415354
+      ]
+    },
+    {
+      "name": "Swanton",
+      "latlon": [
+        37.06417,
+        -122.22639
+      ]
+    },
+    {
+      "name": "SFO",
+      "latlon": [
+        37.621313,
+        -122.378955
+      ]
+    },
+    {
+      "name": "Pescadero",
+      "latlon": [
+        37.255164,
+        -122.383015
+      ]
+    },
+    {
+      "name": "Mountain View",
+      "latlon": [
+        37.386052,
+        -122.083851
+      ]
+    },
+    {
+      "name": "Los Gatos",
+      "latlon": [
+        37.235808,
+        -121.962375
+      ]
+    },
+    {
+      "name": "San Mateo",
+      "latlon": [
+        37.562992,
+        -122.325525
+      ]
+    },
+    {
+      "name": "Half Moon Bay",
+      "latlon": [
+        37.463552,
+        -122.428586
+      ]
+    },
+    {
+      "name": "Palo Alto",
+      "latlon": [
+        37.441883,
+        -122.143019
+      ]
+    },
+    {
+      "name": "San Jose",
+      "latlon": [
+        37.338208,
+        -121.886329
+      ]
+    },
+    {
+      "name": "Santa Cruz",
+      "latlon": [
+        36.974117,
+        -122.030796
+      ]
+    },
+    {
+      "name": "Monterey",
+      "latlon": [
+        36.600238,
+        -121.894676
+      ]
+    }
+  ]
+}
