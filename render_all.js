@@ -19,24 +19,19 @@ const ua = require('universal-analytics');
 
 const cToF = c => Math.round(c * 9.0 / 5.0 + 32);
 
-let ga;
-const recordError = message => {
+const analytics = (() => {
   if (process.env.GOOGLE_ANALYTICS_ID) {
-    if (!ga) {
-      ga = ua(process.env.GOOGLE_ANALYTICS_ID);
-    }
-    ga.exception(message).send();
+    const ga = ua(process.env.GOOGLE_ANALYTICS_ID);
+    return {
+      exception: e => ga.exception(e).send(),
+      event: (a, b) => ga.event(a, b).send()
+    };
   }
-};
-
-const recordEvent = (category, action) => {
-  if (process.env.GOOGLE_ANALYTICS_ID) {
-    if (!ga) {
-      ga = ua(process.env.GOOGLE_ANALYTICS_ID);
-    }
-    ga.event(category, action).send();
-  }
-};
+  return {
+    exception: () => {},
+    event: () => {}
+  };
+})();
 
 const tweet = (png, data) => {
   if (process.env.CONFIG_TWEET !== 'yes') {
@@ -122,11 +117,11 @@ const s3Upload = (configData, filenameBase, pngBuffer, gzipJson) =>
       .promise()
   ])
     .then(() => {
-      recordEvent('Upload', configData.filename);
+      analytics.event('Upload', configData.filename);
       console.log(`${configData.filename}: Uploaded`);
     })
     .catch(err => {
-      recordError(`${configData.filename}: ${err.message}`);
+      analytics.exception(`${configData.filename}: ${err.message}`);
       console.log('Upload error', err);
     });
 
