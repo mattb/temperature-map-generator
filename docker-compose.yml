@@ -23,6 +23,7 @@ services:
       - TWITTER_ACCESS_TOKEN_SECRET
       - TWITTER_CONSUMER_KEY
       - TWITTER_CONSUMER_SECRET
+      - GOOGLE_ANALYTICS_ID
     restart: always
 
   db:
