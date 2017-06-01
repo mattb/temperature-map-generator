@@ -23,8 +23,10 @@ const analytics = (() => {
   if (process.env.GOOGLE_ANALYTICS_ID) {
     const ga = ua(process.env.GOOGLE_ANALYTICS_ID);
     return {
-      exception: e => ga.exception(e).send(),
-      event: (a, b) => ga.event(a, b).send()
+      exception: e =>
+        ga.exception(e, err => err && console.log('GA ERROR', err)),
+      event: (a, b) =>
+        ga.event(a, b, err => err && console.log('GA ERROR', err))
     };
   }
   return {
@@ -143,31 +145,59 @@ const token = () => {
     .then(result => result.access_token);
 };
 
-const getData = (accessToken, frame) => {
-  const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame.ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
-  return fetch(url).then(r => r.json()).then(result => {
-    const temps = [];
-    result.body.forEach(r => {
-      Object.values(r.measures).forEach(measure => {
-        if ('type' in measure) {
-          const idx = measure.type.indexOf('temperature');
-          if (idx !== -1) {
+const getDataModes = {
+  rain: (accessToken, frame) => {
+    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame.ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
+    return fetch(url).then(r => r.json()).then(result => {
+      const rains = [];
+      result.body.forEach(r => {
+        Object.values(r.measures).forEach(measure => {
+          if ('rain_60min' in measure) {
             const ll = [r.place.location[0], r.place.location[1]];
             const px = ll;
-            temps.push([px[0], px[1], Object.values(measure.res)[0][idx]]);
+            rains.push([px[0], px[1], measure.rain_60min]);
           }
-        }
+        });
       });
+      return rains;
     });
-    const allTemps = temps.map(t => t[2]);
-    allTemps.sort((a, b) => a - b);
-    const upperCutoff = allTemps[Math.round(allTemps.length * 0.96)];
-    return temps.filter(t => t[2] < upperCutoff);
-  });
+  },
+  temperature: (accessToken, frame) => {
+    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame.ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
+    return fetch(url).then(r => r.json()).then(result => {
+      const temps = [];
+      result.body.forEach(r => {
+        Object.values(r.measures).forEach(measure => {
+          if ('type' in measure) {
+            const idx = measure.type.indexOf('temperature');
+            if (idx !== -1) {
+              const ll = [r.place.location[0], r.place.location[1]];
+              const px = ll;
+              temps.push([px[0], px[1], Object.values(measure.res)[0][idx]]);
+            }
+          }
+        });
+      });
+      const allTemps = temps.map(t => t[2]);
+      allTemps.sort((a, b) => a - b);
+      const upperCutoff = allTemps[Math.round(allTemps.length * 0.96)];
+      return temps.filter(t => t[2] < upperCutoff);
+    });
+  }
 };
 
-const colors = chroma.scale('Spectral').mode('lab').domain([32, -10]);
-const colorForTemperature = c => colors(Math.round(c)).rgb();
+const getData = (mode, ...args) => getDataModes[mode](...args);
+
+const colors = {
+  temperature: chroma.scale('Spectral').mode('lab').domain([32, -10]),
+  rain: chroma.scale(['#cbe6a3', '#05445c']).mode('lab').domain([0, 5])
+};
+const colorFor = (mode, c) => {
+  if (mode === 'temperature') {
+    return colors.temperature(Math.round(c)).rgb();
+  }
+  return colors[mode](Math.round(c * 4) / 4.0).rgb();
+};
 
 const drawGeoJson = (context, geoJson, projection, fillStyle) => {
   const path = d3.geoPath().projection(projection).context(context);
@@ -223,6 +253,7 @@ console.log(
 
 const generateMap = (configName, accessToken) =>
   readConfig(configName).then(configData => {
+    const mode = configData.mode || 'temperature';
     console.log('Generating', configName);
     const { places, frame, width, height } = configData;
     return get_water_polygons({
@@ -234,7 +265,7 @@ const generateMap = (configName, accessToken) =>
       const canvas = new Canvas(width, height);
       const context = canvas.getContext('2d');
       const proj = makeProjection(width, height, frame);
-      return getData(accessToken, frame).then(data => {
+      return getData(mode, accessToken, frame).then(data => {
         const canvasData = context.getImageData(0, 0, width, height);
 
         const variogram = trainKriging(data, proj);
@@ -251,7 +282,7 @@ const generateMap = (configName, accessToken) =>
               });
             }
             const index = (xpos + ypos * width) * 4;
-            const color = colorForTemperature(val);
+            const color = colorFor(mode, val);
             canvasData.data[index] = color[0];
             canvasData.data[index + 1] = color[1];
             canvasData.data[index + 2] = color[2];
@@ -270,7 +301,7 @@ const generateMap = (configName, accessToken) =>
           temperature_color_scale: Array.from(
             { length: 60 },
             (_, key) => key - 20
-          ).map(i => [i, colorForTemperature(i)]),
+          ).map(i => [i, colorFor(mode, i)]),
           d3: {
             scale: proj.scale(),
             translate: proj.translate()

@@ -8,7 +8,7 @@ const db = pgp(connectionString);
 
 const water_polygons = query =>
   db
-    .many(
+    .any(
       'SELECT ST_AsGeoJSON(ST_Intersection(water_polygons.wkb_geometry, ST_MakeEnvelope(${lon_min}, ${lat_min}, ${lon_max}, ${lat_max}, 4326))) AS geojson FROM water_polygons WHERE water_polygons.wkb_geometry && ST_MakeEnvelope(${lon_min}, ${lat_min}, ${lon_max}, ${lat_max}, 4326);', // eslint-disable-line no-template-curly-in-string
       query
     )
