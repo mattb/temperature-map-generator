@@ -125,7 +125,7 @@ const s3Upload = (
     });
 
 const readConfig = configName =>
-  fs.readFileAsync(`${configName}.json`).then(f => JSON.parse(f));
+  fs.readFileAsync(`configs/${configName}.json`).then(f => JSON.parse(f));
 
 const token = () => {
   const form = new FormData();
