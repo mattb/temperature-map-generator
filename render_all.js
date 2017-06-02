@@ -248,117 +248,110 @@ console.log(
 );
 */
 
-const generateMap = (configName, accessToken) =>
-  readConfig(configName).then(configData => {
-    const modes = ['temperature', 'rain'];
-    return Promise.map(modes, mode => {
-      console.log('Generating', configName, mode);
-      const { places, frame, width, height } = configData;
-      return get_water_polygons({
-        lon_min: frame.sw[1],
-        lat_min: frame.sw[0],
-        lon_max: frame.ne[1],
-        lat_max: frame.ne[0]
-      }).then(geoJson => {
-        const canvas = new Canvas(width, height);
-        const context = canvas.getContext('2d');
-        const proj = makeProjection(width, height, frame);
-        return getData(mode, accessToken, frame).then(data => {
-          const canvasData = context.getImageData(0, 0, width, height);
+const generateMap = async (configName, accessToken) => {
+  const modes = ['temperature', 'rain'];
+  const configData = await readConfig(configName);
+  const { places, frame, width, height } = configData;
 
-          const variogram = trainKriging(data, proj);
-          const predictions = [];
-          for (let ypos = 0; ypos < height; ypos += 1) {
-            const line = [];
-            for (let xpos = 0; xpos < height; xpos += 1) {
-              const val = kriging.predict(xpos, ypos, variogram);
-              predictions.push(val);
-              if (xpos % 10 === 0 && ypos % 10 === 0) {
-                line.push({
-                  ll: proj.invert([xpos, ypos]).map(l => l.toFixed(4)),
-                  t: val.toFixed(1)
-                });
-              }
-              const index = (xpos + ypos * width) * 4;
-              const color = colorFor(mode, val);
-              canvasData.data[index] = color[0];
-              canvasData.data[index + 1] = color[1];
-              canvasData.data[index + 2] = color[2];
-              canvasData.data[index + 3] = 255;
-            }
-          }
-          if (process.env.CONFIG_SKIP_TEMPERATURES !== 'yes') {
-            context.putImageData(canvasData, 0, 0);
-          }
-
-          drawGeoJson(context, geoJson, proj, 'lightblue');
-
-          const suffix = mode === 'temperature' ? '' : `-${mode}`;
-          const summaryFilename = `${configData.filename}${suffix}`;
-          const filenameBase = `${summaryFilename}-${new Date().toISOString()}`;
-
-          const output = {
-            temperature_color_scale: Array.from(
-              { length: 60 },
-              (_, key) => key - 20
-            ).map(i => [i, colorFor(mode, i)]),
-            d3: {
-              scale: proj.scale(),
-              translate: proj.translate()
-            },
-            places: places.map(p => {
-              const xy = proj([p.latlon[1], p.latlon[0]]);
-              return Object.assign({}, p, {
-                temp_in_c: kriging.predict(xy[0], xy[1], variogram).toFixed(1),
-                x: xy[0].toFixed(0),
-                y: xy[1].toFixed(1)
-              });
-            }),
-            timestamp: new Date().toISOString(),
-            average_in_c: predictions.reduce((a, b) => a + b) /
-              predictions.length,
-            min_in_c: predictions.reduce((a, b) => Math.min(a, b)).toFixed(1),
-            max_in_c: predictions.reduce((a, b) => Math.max(a, b)).toFixed(1),
-            png: `${filenameBase}.png`
-          };
-
-          zlib.gzipAsync(JSON.stringify(output, null, 2)).then(gzipJson => {
-            imagemin
-              .buffer(canvas.toBuffer(), { use: [imageminOptipng()] })
-              .then(pngBuffer => {
-                if (configName === 'sf' && mode === 'temperature') {
-                  tweet(pngBuffer, output);
-                }
-                if (process.env.CONFIG_S3_UPLOAD === 'yes') {
-                  s3Upload(
-                    configData,
-                    summaryFilename,
-                    filenameBase,
-                    pngBuffer,
-                    gzipJson
-                  );
-                } else {
-                  Promise.all([
-                    fs.writeFileAsync(`output/${filenameBase}.png`, pngBuffer),
-                    fs.writeFileAsync(
-                      `output/${filenameBase}.json`,
-                      JSON.stringify(output, null, 2)
-                    )
-                  ]).then(() => console.log(`${configName}: Written files`));
-                }
-              });
-          });
-        });
-      });
-    });
+  const geoJson = await get_water_polygons({
+    lon_min: frame.sw[1],
+    lat_min: frame.sw[0],
+    lon_max: frame.ne[1],
+    lat_max: frame.ne[0]
   });
 
-const generate = () =>
-  token().then(t =>
-    Promise.each(['sf', 'eastbay', 'northbay', 'southbay', 'bayarea'], config =>
-      generateMap(config, t)
-    )
+  return Promise.map(modes, async mode => {
+    console.log('Generating', configName, mode);
+
+    const data = await getData(mode, accessToken, frame);
+
+    const canvas = new Canvas(width, height);
+    const context = canvas.getContext('2d');
+    const proj = makeProjection(width, height, frame);
+    const canvasData = context.getImageData(0, 0, width, height);
+
+    const variogram = trainKriging(data, proj);
+    const predictions = [];
+    for (let ypos = 0; ypos < height; ypos += 1) {
+      const line = [];
+      for (let xpos = 0; xpos < height; xpos += 1) {
+        const val = kriging.predict(xpos, ypos, variogram);
+        predictions.push(val);
+        if (xpos % 10 === 0 && ypos % 10 === 0) {
+          line.push({
+            ll: proj.invert([xpos, ypos]).map(l => l.toFixed(4)),
+            t: val.toFixed(1)
+          });
+        }
+        const index = (xpos + ypos * width) * 4;
+        const color = colorFor(mode, val);
+        canvasData.data[index] = color[0];
+        canvasData.data[index + 1] = color[1];
+        canvasData.data[index + 2] = color[2];
+        canvasData.data[index + 3] = 255;
+      }
+    }
+    if (process.env.CONFIG_SKIP_TEMPERATURES !== 'yes') {
+      context.putImageData(canvasData, 0, 0);
+    }
+
+    drawGeoJson(context, geoJson, proj, 'lightblue');
+
+    const suffix = mode === 'temperature' ? '' : `-${mode}`;
+    const summaryFilename = `${configData.filename}${suffix}`;
+    const filenameBase = `${summaryFilename}-${new Date().toISOString()}`;
+
+    const output = {
+      temperature_color_scale: Array.from(
+        { length: 60 },
+        (_, key) => key - 20
+      ).map(i => [i, colorFor(mode, i)]),
+      d3: {
+        scale: proj.scale(),
+        translate: proj.translate()
+      },
+      places: places.map(p => {
+        const xy = proj([p.latlon[1], p.latlon[0]]);
+        return Object.assign({}, p, {
+          temp_in_c: kriging.predict(xy[0], xy[1], variogram).toFixed(1),
+          x: xy[0].toFixed(0),
+          y: xy[1].toFixed(1)
+        });
+      }),
+      timestamp: new Date().toISOString(),
+      average_in_c: predictions.reduce((a, b) => a + b) / predictions.length,
+      min_in_c: predictions.reduce((a, b) => Math.min(a, b)).toFixed(1),
+      max_in_c: predictions.reduce((a, b) => Math.max(a, b)).toFixed(1),
+      png: `${filenameBase}.png`
+    };
+
+    const gzipJson = await zlib.gzipAsync(JSON.stringify(output, null, 2));
+    const pngBuffer = await imagemin.buffer(canvas.toBuffer(), {
+      use: [imageminOptipng()]
+    });
+    if (configName === 'sf' && mode === 'temperature') {
+      tweet(pngBuffer, output);
+    }
+    if (process.env.CONFIG_S3_UPLOAD === 'yes') {
+      s3Upload(configData, summaryFilename, filenameBase, pngBuffer, gzipJson);
+    } else {
+      Promise.all([
+        fs.writeFileAsync(`output/${filenameBase}.png`, pngBuffer),
+        fs.writeFileAsync(
+          `output/${filenameBase}.json`,
+          JSON.stringify(output, null, 2)
+        )
+      ]).then(() => console.log(`${configName}: Written files`));
+    }
+  });
+};
+
+const generate = async () => {
+  const t = await token();
+  Promise.each(['sf', 'eastbay', 'northbay', 'southbay', 'bayarea'], config =>
+    generateMap(config, t)
   );
+};
 
 if (process.env.CONFIG_SCHEDULE === 'yes') {
   schedule.scheduleJob('0 * * * *', () => {
