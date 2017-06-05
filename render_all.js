@@ -16,6 +16,7 @@ const imagemin = require('imagemin');
 const imageminOptipng = require('imagemin-optipng');
 const zlib = Promise.promisifyAll(require('zlib'));
 const ua = require('universal-analytics');
+const SunCalc = require('suncalc');
 
 const cToF = c => Math.round(c * 9.0 / 5.0 + 32);
 
@@ -48,7 +49,13 @@ const tweet = (png, data) => {
   client.post('media/upload', { media: png }, (error, media) => {
     if (!error) {
       const status = {
-        status: `Temperatures in San Francisco right now: ${Math.round(data.min_in_c)}C/${cToF(data.min_in_c)}F min, ${Math.round(data.average_in_c)}C/${cToF(data.average_in_c)}F average, ${Math.round(data.max_in_c)}C/${cToF(data.max_in_c)}F max`,
+        status: `Temperatures in San Francisco right now: ${Math.round(
+          data.min_in_c
+        )}C/${cToF(data.min_in_c)}F min, ${Math.round(
+          data.average_in_c
+        )}C/${cToF(data.average_in_c)}F average, ${Math.round(
+          data.max_in_c
+        )}C/${cToF(data.max_in_c)}F max`,
         media_ids: media.media_id_string // Pass the media id string
       };
 
@@ -144,7 +151,9 @@ const token = () => {
 
 const getDataModes = {
   rain: (accessToken, frame) => {
-    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame.ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
+    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame
+      .ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame
+      .sw[1]}`;
     return fetch(url).then(r => r.json()).then(result => {
       const rains = [];
       result.body.forEach(r => {
@@ -160,7 +169,9 @@ const getDataModes = {
     });
   },
   temperature: (accessToken, frame) => {
-    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame.ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
+    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame
+      .ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame
+      .sw[1]}`;
     return fetch(url).then(r => r.json()).then(result => {
       const temps = [];
       result.body.forEach(r => {
@@ -303,6 +314,7 @@ const generateMap = async (configName, accessToken) => {
       const filenameBase = `${summaryFilename}-${new Date().toISOString()}`;
 
       const output = {
+        frame,
         temperature_color_scale: Array.from(
           { length: 60 },
           (_, key) => key - 20
@@ -323,7 +335,8 @@ const generateMap = async (configName, accessToken) => {
         average_in_c: predictions.reduce((a, b) => a + b) / predictions.length,
         min_in_c: predictions.reduce((a, b) => Math.min(a, b)).toFixed(1),
         max_in_c: predictions.reduce((a, b) => Math.max(a, b)).toFixed(1),
-        png: `${filenameBase}.png`
+        png: `${filenameBase}.png`,
+        sun: SunCalc.getTimes(new Date(), frame.sw[0], frame.sw[1])
       };
 
       const gzipJson = await zlib.gzipAsync(JSON.stringify(output, null, 2));
