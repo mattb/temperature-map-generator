@@ -1,9 +1,9 @@
 --- 
 apiVersion: v1
 data: 
-  CONFIG_S3_UPLOAD: "true"
-  CONFIG_SCHEDULE: "true"
-  CONFIG_TWEET: "true"
+  CONFIG_S3_UPLOAD: "yes"
+  CONFIG_SCHEDULE: "yes"
+  CONFIG_TWEET: "yes"
   NETATMO_BASE_URL: "https://api.netatmo.com"
   NODE_ENV: "production"
 kind: ConfigMap

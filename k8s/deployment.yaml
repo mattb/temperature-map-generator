@@ -18,13 +18,13 @@ spec:
         - name: temperature-map-generator
           env:
           - name: POSTGRES_CONNECTION_STRING
-            value: "postgres://postgres:mysecretpassword@water.default.svc.cluster.local:5432/postgres"
+            value: "postgres://postgres:mysecretpassword@water.apps.svc.cluster.local:5432/postgres"
           envFrom:
           - secretRef:
               name: tempmap-secrets
           - configMapRef:
               name: tempmap-config
-          image: "gcr.io/mattb-k8s/github-mattb-temperature-map-generator:eed55fde9a7d461b02dd052f016299efee0209a7"
+          image: "gcr.io/mattb-k8s/github-mattb-temperature-map-generator:83c23890927e965acbcb698261b5e61acf8bc2cc"
           imagePullPolicy: "IfNotPresent"
           resources:
             {}
