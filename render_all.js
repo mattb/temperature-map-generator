@@ -151,54 +151,64 @@ const token = () => {
 
 const getDataModes = {
   rain: (accessToken, frame) => {
-    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame
-      .ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame
-      .sw[1]}`;
-    return fetch(url).then(r => r.json()).then(result => {
-      const rains = [];
-      result.body.forEach(r => {
-        Object.values(r.measures).forEach(measure => {
-          if ('rain_60min' in measure) {
-            const ll = [r.place.location[0], r.place.location[1]];
-            const px = ll;
-            rains.push([px[0], px[1], measure.rain_60min]);
-          }
-        });
-      });
-      return rains;
-    });
-  },
-  temperature: (accessToken, frame) => {
-    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${frame
-      .ne[0]}&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame
-      .sw[1]}`;
-    return fetch(url).then(r => r.json()).then(result => {
-      const temps = [];
-      result.body.forEach(r => {
-        Object.values(r.measures).forEach(measure => {
-          if ('type' in measure) {
-            const idx = measure.type.indexOf('temperature');
-            if (idx !== -1) {
+    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${
+      frame.ne[0]
+    }&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
+    return fetch(url)
+      .then(r => r.json())
+      .then(result => {
+        const rains = [];
+        result.body.forEach(r => {
+          Object.values(r.measures).forEach(measure => {
+            if ('rain_60min' in measure) {
               const ll = [r.place.location[0], r.place.location[1]];
               const px = ll;
-              temps.push([px[0], px[1], Object.values(measure.res)[0][idx]]);
+              rains.push([px[0], px[1], measure.rain_60min]);
             }
-          }
+          });
         });
+        return rains;
       });
-      const allTemps = temps.map(t => t[2]);
-      allTemps.sort((a, b) => a - b);
-      const upperCutoff = allTemps[Math.round(allTemps.length * 0.96)];
-      return temps.filter(t => t[2] < upperCutoff);
-    });
+  },
+  temperature: (accessToken, frame) => {
+    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${
+      frame.ne[0]
+    }&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
+    return fetch(url)
+      .then(r => r.json())
+      .then(result => {
+        const temps = [];
+        result.body.forEach(r => {
+          Object.values(r.measures).forEach(measure => {
+            if ('type' in measure) {
+              const idx = measure.type.indexOf('temperature');
+              if (idx !== -1) {
+                const ll = [r.place.location[0], r.place.location[1]];
+                const px = ll;
+                temps.push([px[0], px[1], Object.values(measure.res)[0][idx]]);
+              }
+            }
+          });
+        });
+        const allTemps = temps.map(t => t[2]);
+        allTemps.sort((a, b) => a - b);
+        const upperCutoff = allTemps[Math.round(allTemps.length * 0.96)];
+        return temps.filter(t => t[2] < upperCutoff);
+      });
   }
 };
 
 const getData = (mode, ...args) => getDataModes[mode](...args);
 
 const colors = {
-  temperature: chroma.scale('Spectral').mode('lab').domain([32, -10]),
-  rain: chroma.scale(['#cbe6a3', '#05445c']).mode('lab').domain([0, 5])
+  temperature: chroma
+    .scale('Spectral')
+    .mode('lab')
+    .domain([32, -10]),
+  rain: chroma
+    .scale(['#cbe6a3', '#05445c'])
+    .mode('lab')
+    .domain([0, 5])
 };
 const colorFor = (mode, c) => {
   if (mode === 'temperature') {
@@ -208,7 +218,10 @@ const colorFor = (mode, c) => {
 };
 
 const drawGeoJson = (context, geoJson, projection, fillStyle) => {
-  const path = d3.geoPath().projection(projection).context(context);
+  const path = d3
+    .geoPath()
+    .projection(projection)
+    .context(context);
   context.fillStyle = fillStyle; // eslint-disable-line no-param-reassign
   context.beginPath();
   path(geoJson);
@@ -377,9 +390,11 @@ const generate = async () => {
 };
 
 if (process.env.CONFIG_SCHEDULE === 'yes') {
+  console.log('Running in scheduler mode');
   schedule.scheduleJob('0 * * * *', () => {
     generate();
   });
 } else {
+  console.log('Running in immediate mode');
   generate();
 }
