@@ -1,0 +1,11 @@
+--- 
+apiVersion: v1
+data: 
+  CONFIG_S3_UPLOAD: "true"
+  CONFIG_SCHEDULE: "true"
+  CONFIG_TWEET: "true"
+  NETATMO_BASE_URL: "https://api.netatmo.com"
+  NODE_ENV: "production"
+kind: ConfigMap
+metadata: 
+  name: tempmap-config

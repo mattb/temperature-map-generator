@@ -42,6 +42,7 @@ spec:
     metadata:
       labels:
         app: temperature-map
+        service: db
         release: "1"
     spec:
       containers:

@@ -6,12 +6,11 @@ metadata:
     app: temperature-map
     release: "1"
 spec:
-  type: ClusterIP
+  clusterIP: None
   ports:
     - port: 5432
       targetPort: 5432
       protocol: TCP
       name: water
   selector:
-    app: temperature-map
-    release: "1"
+    service: db

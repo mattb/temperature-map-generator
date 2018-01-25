@@ -1,3 +1,4 @@
-sops --decrypt secrets-sops.yaml | kubectl apply -f -
-kubectl apply -f deployment.yaml
-kubectl apply -f service-water.yaml
+sops --decrypt secrets-sops.yaml | kubectl --namespace=apps apply -f -
+kubectl --namespace=apps apply -f configmap.yaml
+kubectl --namespace=apps apply -f deployment.yaml
+kubectl --namespace=apps apply -f service-water.yaml
