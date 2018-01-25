@@ -345,6 +345,7 @@ const generateMap = async (configName, accessToken) => {
           });
         }),
         timestamp: new Date().toISOString(),
+        pod: process.env.MY_POD_NAME,
         average_in_c: predictions.reduce((a, b) => a + b) / predictions.length,
         min_in_c: predictions.reduce((a, b) => Math.min(a, b)).toFixed(1),
         max_in_c: predictions.reduce((a, b) => Math.max(a, b)).toFixed(1),
