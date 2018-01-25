@@ -1,0 +1,79 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: temperature-map-generator
+  labels:
+    app: temperature-map
+    release: "1"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: temperature-map
+        release: "1"
+    spec:
+      containers:
+        - name: temperature-map-generator
+          env:
+          - name: POSTGRES_CONNECTION_STRING
+            value: "postgres://postgres:mysecretpassword@water.default.svc.cluster.local:5432/postgres"
+          envFrom:
+          - secretRef:
+              name: tempmap-secrets
+          - configMapRef:
+              name: tempmap-config
+          image: "gcr.io/mattb-k8s/github-mattb-temperature-map-generator:eed55fde9a7d461b02dd052f016299efee0209a7"
+          imagePullPolicy: "IfNotPresent"
+          resources:
+            {}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: water
+  labels:
+    app: temperature-map
+    release: "1"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: temperature-map
+        release: "1"
+    spec:
+      containers:
+        - name: temperature-map-water
+          envFrom:
+          - secretRef:
+              name: tempmap-secrets
+          - configMapRef:
+              name: tempmap-config
+          image: "mattb/postgis-water:latest"
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          livenessProbe:
+            exec:
+              command:
+              - pg_isready
+              - -h
+              - localhost
+              - -U
+              - postgres
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+              - pg_isready
+              - -h
+              - localhost
+              - -U
+              - postgres
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          resources:
+            {}
