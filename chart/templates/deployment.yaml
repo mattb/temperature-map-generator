@@ -1,34 +1,3 @@
----
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: temperature-map-generator
-  labels:
-    app: temperature-map
-    release: "1"
-spec:
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: temperature-map
-        release: "1"
-    spec:
-      containers:
-        - name: temperature-map-generator
-          env:
-          - name: POSTGRES_CONNECTION_STRING
-            value: "postgres://postgres:mysecretpassword@water.apps.svc.cluster.local:5432/postgres"
-          envFrom:
-          - secretRef:
-              name: tempmap-secrets
-          - configMapRef:
-              name: tempmap-config
-          image: "gcr.io/mattb-k8s/github-mattb-temperature-map-generator:83c23890927e965acbcb698261b5e61acf8bc2cc"
-          imagePullPolicy: "IfNotPresent"
-          resources:
-            {}
----
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:

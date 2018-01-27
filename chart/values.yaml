@@ -1,0 +1,4 @@
+image:
+  repository: "gcr.io/mattb-k8s/github-mattb-temperature-map-generator"
+  tag: "0a4e6ce079b8c9fa66821f5db73696bb38b9cd30"
+  pullPolicy: IfNotPresent
