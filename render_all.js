@@ -17,8 +17,87 @@ const imageminOptipng = require('imagemin-optipng');
 const zlib = Promise.promisifyAll(require('zlib'));
 const ua = require('universal-analytics');
 const SunCalc = require('suncalc');
+const monitoring = require('@google-cloud/monitoring');
 
 const cToF = c => Math.round(c * 9.0 / 5.0 + 32);
+
+const metricsGauge = metricDescriptor => {
+  if (process.env.GOOGLE_PROJECT_ID) {
+    console.log('Metrics time!');
+    const client = new monitoring.MetricServiceClient();
+    const request = {
+      name: client.projectPath(process.env.GOOGLE_PROJECT_ID),
+      metricDescriptor
+    };
+
+    // Creates a custom metric descriptor
+    const created = client
+      .createMetricDescriptor(request)
+      .then(results => {
+        const descriptor = results[0];
+
+        console.log('Created custom Metric:\n');
+        console.log(`Name: ${descriptor.displayName}`);
+        console.log(`Description: ${descriptor.description}`);
+        console.log(`Type: ${descriptor.type}`);
+        console.log(`Kind: ${descriptor.metricKind}`);
+        console.log(`Value Type: ${descriptor.valueType}`);
+        console.log(`Unit: ${descriptor.unit}`);
+        console.log('Labels:');
+        descriptor.labels.forEach(label => {
+          console.log(
+            `  ${label.key} (${label.valueType}) - ${label.description}`
+          );
+        });
+      })
+      .catch(err => {
+        console.error('ERROR:', err);
+      });
+    return value => {
+      const dataPoint = {
+        interval: {
+          endTime: {
+            seconds: Date.now() / 1000
+          }
+        },
+        value: {
+          int64Value: value
+        }
+      };
+
+      const timeSeriesData = {
+        metric: {
+          type: metricDescriptor.type
+        },
+        resource: {
+          type: 'global',
+          labels: {
+            project_id: process.env.GOOGLE_PROJECT_ID
+          }
+        },
+        points: [dataPoint]
+      };
+
+      const tsRequest = {
+        name: client.projectPath(process.env.GOOGLE_PROJECT_ID),
+        timeSeries: [timeSeriesData]
+      };
+
+      created.then(() => {
+        // Writes time series data
+        client
+          .createTimeSeries(tsRequest)
+          .then(results => {
+            console.log('Done writing time series data.', results[0]);
+          })
+          .catch(err => {
+            console.error('ERROR:', err);
+          });
+      });
+    };
+  }
+  return () => {};
+};
 
 const analytics = (() => {
   if (process.env.GOOGLE_ANALYTICS_ID) {
@@ -83,6 +162,15 @@ const s3 = (() => {
   config.update({ credentials });
   return new AWS.S3(config);
 })();
+
+const gauge = metricsGauge({
+  description: 'Maps generated',
+  displayName: 'Maps generated',
+  type: 'custom.googleapis.com/maps',
+  metricKind: 'GAUGE',
+  valueType: 'INT64',
+  labels: []
+});
 
 const s3Upload = (
   configData,
@@ -272,7 +360,7 @@ console.log(
 );
 */
 
-const generateMap = async (configName, accessToken) => {
+const generateMap = async (configName, accessToken, gaugeNumber) => {
   const modes = ['temperature', 'rain'];
   const configData = await readConfig(configName);
   const { places, frame, width, height } = configData;
@@ -367,7 +455,7 @@ const generateMap = async (configName, accessToken) => {
           filenameBase,
           pngBuffer,
           gzipJson
-        );
+        ).then(() => gauge(gaugeNumber));
       } else {
         Promise.all([
           fs.writeFileAsync(`output/${filenameBase}.png`, pngBuffer),
@@ -385,9 +473,11 @@ const generateMap = async (configName, accessToken) => {
 
 const generate = async () => {
   const t = await token();
-  Promise.each(['sf', 'eastbay', 'northbay', 'southbay', 'bayarea'], config =>
-    generateMap(config, t)
-  );
+  let n = 0;
+  Promise.each(['sf', 'eastbay', 'northbay', 'southbay', 'bayarea'], config => {
+    n += 1;
+    return generateMap(config, t, n);
+  });
 };
 
 if (process.env.CONFIG_SCHEDULE === 'yes') {

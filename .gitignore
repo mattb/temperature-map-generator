@@ -25,3 +25,4 @@ out.json
 out.mp4
 frame*.png
 output
+local-secrets

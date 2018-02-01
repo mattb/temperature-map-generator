@@ -6,6 +6,7 @@
     "start": "node --trace-warnings render_all.js"
   },
   "dependencies": {
+    "@google-cloud/monitoring": "^0.4.1",
     "aws-sdk": "^2.49.0",
     "bluebird": "^3.5.0",
     "canvas": "^1.6.5",

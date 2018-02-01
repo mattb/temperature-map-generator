@@ -27,8 +27,18 @@ spec:
                   fieldPath: metadata.name
             - name: CONFIG_SCHEDULE
               value: "no"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/etc/secret-volume/gcp.json"
             image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
+            volumeMounts:
+            - name: temp-secret-volume
+              mountPath: /etc/secret-volume
+              readOnly: true
             resources:
               {}
           restartPolicy: OnFailure
+          volumes:
+          - name: temp-secret-volume
+            secret:
+              secretName: tempmap-gcp

@@ -6,6 +6,7 @@ data:
   CONFIG_TWEET: "yes"
   NETATMO_BASE_URL: "https://api.netatmo.com"
   NODE_ENV: "production"
+  GOOGLE_PROJECT_ID: "mattb-k8s"
 kind: ConfigMap
 metadata: 
   name: tempmap-config

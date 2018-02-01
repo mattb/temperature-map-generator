@@ -24,6 +24,8 @@ services:
       - TWITTER_CONSUMER_KEY
       - TWITTER_CONSUMER_SECRET
       - GOOGLE_ANALYTICS_ID
+      - GOOGLE_PROJECT_ID
+      - GOOGLE_APPLICATION_CREDENTIALS
     restart: always
 
   db:
