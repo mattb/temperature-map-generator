@@ -1,7 +1,5 @@
 const Promise = require('bluebird');
-const get_water_polygons = require('./get_water');
 const AWS = require('aws-sdk');
-const kriging = require('./kriging');
 const chroma = require('chroma-js');
 const fetch = require('isomorphic-fetch');
 const d3 = Object.assign({}, require('d3-geo'), require('d3-array'));
@@ -18,11 +16,16 @@ const zlib = Promise.promisifyAll(require('zlib'));
 const ua = require('universal-analytics');
 const SunCalc = require('suncalc');
 const monitoring = require('@google-cloud/monitoring');
+const kriging = require('./kriging');
+const get_water_polygons = require('./get_water');
 
-const cToF = c => Math.round(c * 9.0 / 5.0 + 32);
+const cToF = c => Math.round((c * 9.0) / 5.0 + 32);
 
 const metricsGauge = metricDescriptor => {
-  if (process.env.GOOGLE_PROJECT_ID) {
+  if (
+    process.env.GOOGLE_PROJECT_ID &&
+    fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)
+  ) {
     console.log('Metrics time!');
     const client = new monitoring.MetricServiceClient();
     const request = {
@@ -239,7 +242,9 @@ const token = () => {
 
 const getDataModes = {
   rain: (accessToken, frame) => {
-    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${
+    const url = `${
+      process.env.NETATMO_BASE_URL
+    }/api/getpublicdata?access_token=${accessToken}&lat_ne=${
       frame.ne[0]
     }&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
     return fetch(url)
@@ -259,7 +264,9 @@ const getDataModes = {
       });
   },
   temperature: (accessToken, frame) => {
-    const url = `https://dev.netatmo.com/api/getpublicdata?access_token=${accessToken}&lat_ne=${
+    const url = `${
+      process.env.NETATMO_BASE_URL
+    }/api/getpublicdata?access_token=${accessToken}&lat_ne=${
       frame.ne[0]
     }&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
     return fetch(url)
@@ -398,9 +405,11 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
           }
           const index = (xpos + ypos * width) * 4;
           const color = colorFor(mode, val);
-          canvasData.data[index] = color[0];
-          canvasData.data[index + 1] = color[1];
-          canvasData.data[index + 2] = color[2];
+          [
+            canvasData.data[index],
+            canvasData.data[index + 1],
+            canvasData.data[index + 2]
+          ] = color;
           canvasData.data[index + 3] = 255;
         }
       }
