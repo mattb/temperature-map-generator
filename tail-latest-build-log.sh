@@ -1,1 +1,1 @@
-gcloud container builds log --stream $(gcloud container builds list --format 'value(id)' | head -1)
+gcloud builds log --stream $(gcloud builds list --format 'value(id)' | head -1)
