@@ -3,13 +3,14 @@ const AWS = require("aws-sdk");
 const chroma = require("chroma-js");
 const fetch = require("isomorphic-fetch");
 
-const d3 = { ...require("d3-geo"), ...require("d3-array") };
-const Canvas = require("canvas");
+const d3 = require("d3-geo");
+const { Canvas } = require("canvas");
 const FormData = require("form-data");
 const util = require("util");
 const Twitter = require("twitter");
 const schedule = require("node-schedule");
 const process = require("process");
+require("dotenv-safe").config();
 const fs = Promise.promisifyAll(require("fs"));
 const imagemin = require("imagemin");
 const imageminOptipng = require("imagemin-optipng");
@@ -142,17 +143,13 @@ const tweet = (png, data) => {
         media_ids: media.media_id_string // Pass the media id string
       };
 
-      client.post(
-        "statuses/update",
-        status,
-        (updateError, updateTweet, response) => {
-          if (!updateError) {
-            console.log("Tweeted");
-          } else {
-            console.log(updateError, response);
-          }
+      client.post("statuses/update", status, (updateError, _, response) => {
+        if (!updateError) {
+          console.log("Tweeted");
+        } else {
+          console.log(updateError, response);
         }
-      );
+      });
     }
   });
 };
@@ -373,7 +370,7 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
   const configData = await readConfig(configName);
   const { places, frame, width, height } = configData;
 
-  const geoJson = await get_water_polygons({
+  const geoJson = await get_water_polygons(configName, {
     lon_min: frame.sw[1],
     lat_min: frame.sw[0],
     lon_max: frame.ne[1],

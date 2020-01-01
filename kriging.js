@@ -6,8 +6,9 @@ Array.prototype.min = function() {
   return Math.min.apply(null, this);
 };
 Array.prototype.mean = function() {
-  let i, sum;
-  for ((i = 0), (sum = 0); i < this.length; i++) {
+  let i;
+  let sum;
+  for (i = 0, sum = 0; i < this.length; i++) {
     sum += this[i];
   }
   return sum / this.length;
@@ -16,13 +17,14 @@ Array.prototype.rep = function(n) {
   return Array(...new Array(n)).map(Number.prototype.valueOf, this[0]);
 };
 Array.prototype.pip = function(x, y) {
-  let i, j, c = false;
-  for ((i = 0), (j = this.length - 1); i < this.length; j = i++) {
+  let i;
+  let j;
+  let c = false;
+  for (i = 0, j = this.length - 1; i < this.length; j = i++) {
     if (
       this[i][1] > y != this[j][1] > y &&
       x <
-        (this[j][0] - this[i][0]) *
-          (y - this[i][1]) /
+        ((this[j][0] - this[i][0]) * (y - this[i][1])) /
           (this[j][1] - this[i][1]) +
           this[i][0]
     ) {
@@ -37,14 +39,17 @@ const kriging = (function() {
 
   // Matrix algebra
   kriging_matrix_diag = function(c, n) {
-    let i, Z = [0].rep(n * n);
+    let i;
+    const Z = [0].rep(n * n);
     for (i = 0; i < n; i++) {
       Z[i * n + i] = c;
     }
     return Z;
   };
   kriging_matrix_transpose = function(X, n, m) {
-    let i, j, Z = Array(m * n);
+    let i;
+    let j;
+    const Z = Array(m * n);
     for (i = 0; i < n; i++) {
       for (j = 0; j < m; j++) {
         Z[j * n + i] = X[i * m + j];
@@ -53,7 +58,8 @@ const kriging = (function() {
     return Z;
   };
   kriging_matrix_scale = function(X, c, n, m) {
-    let i, j;
+    let i;
+    let j;
     for (i = 0; i < n; i++) {
       for (j = 0; j < m; j++) {
         X[i * m + j] *= c;
@@ -61,7 +67,9 @@ const kriging = (function() {
     }
   };
   kriging_matrix_add = function(X, Y, n, m) {
-    let i, j, Z = Array(n * m);
+    let i;
+    let j;
+    const Z = Array(n * m);
     for (i = 0; i < n; i++) {
       for (j = 0; j < m; j++) {
         Z[i * m + j] = X[i * m + j] + Y[i * m + j];
@@ -71,7 +79,10 @@ const kriging = (function() {
   };
   // Naive matrix multiplication
   kriging_matrix_multiply = function(X, Y, n, m, p) {
-    let i, j, k, Z = Array(n * p);
+    let i;
+    let j;
+    let k;
+    const Z = Array(n * p);
     for (i = 0; i < n; i++) {
       for (j = 0; j < p; j++) {
         Z[i * p + j] = 0;
@@ -84,7 +95,11 @@ const kriging = (function() {
   };
   // Cholesky decomposition
   kriging_matrix_chol = function(X, n) {
-    let i, j, k, sum, p = Array(n);
+    let i;
+    let j;
+    let k;
+    let sum;
+    const p = Array(n);
     for (i = 0; i < n; i++) {
       p[i] = X[i * n + i];
     }
@@ -108,7 +123,10 @@ const kriging = (function() {
   };
   // Inversion of cholesky decomposition
   kriging_matrix_chol2inv = function(X, n) {
-    let i, j, k, sum;
+    let i;
+    let j;
+    let k;
+    let sum;
     for (i = 0; i < n; i++) {
       X[i * n + i] = 1 / X[i * n + i];
       for (j = i + 1; j < n; j++) {
@@ -148,8 +166,17 @@ const kriging = (function() {
     const indxc = Array(n);
     const indxr = Array(n);
     const ipiv = Array(n);
-    let i, icol, irow, j, k, l, ll;
-    let big, dum, pivinv, temp;
+    let i;
+    let icol;
+    let irow;
+    let j;
+    let k;
+    let l;
+    let ll;
+    let big;
+    let dum;
+    let pivinv;
+    let temp;
 
     for (i = 0; i < n; i++) {
       for (j = 0; j < n; j++) {
@@ -233,23 +260,21 @@ const kriging = (function() {
   kriging_variogram_gaussian = function(h, nugget, range, sill, A) {
     return (
       nugget +
-      (sill - nugget) /
-        range *
+      ((sill - nugget) / range) *
         (1.0 - Math.exp(-(1.0 / A) * Math.pow(h / range, 2)))
     );
   };
   kriging_variogram_exponential = function(h, nugget, range, sill, A) {
     return (
       nugget +
-      (sill - nugget) / range * (1.0 - Math.exp(-(1.0 / A) * (h / range)))
+      ((sill - nugget) / range) * (1.0 - Math.exp(-(1.0 / A) * (h / range)))
     );
   };
   kriging_variogram_spherical = function(h, nugget, range, sill, A) {
     if (h > range) return nugget + (sill - nugget) / range;
     return (
       nugget +
-      (sill - nugget) /
-        range *
+      ((sill - nugget) / range) *
         (1.5 * (h / range) - 0.5 * Math.pow(h / range, 3))
     );
   };
@@ -267,21 +292,25 @@ const kriging = (function() {
       n: 0
     };
     switch (model) {
-      case 'gaussian':
+      case "gaussian":
         variogram.model = kriging_variogram_gaussian;
         break;
-      case 'exponential':
+      case "exponential":
         variogram.model = kriging_variogram_exponential;
         break;
-      case 'spherical':
+      case "spherical":
         variogram.model = kriging_variogram_spherical;
         break;
     }
 
     // Lag distance/semivariance
-    let i, j, k, l, n = t.length;
+    let i;
+    let j;
+    let k;
+    let l;
+    let n = t.length;
     const distance = Array((n * n - n) / 2);
-    for ((i = 0), (k = 0); i < n; i++) {
+    for (i = 0, k = 0; i < n; i++) {
       for (j = 0; j < i; j++, k++) {
         distance[k] = Array(2);
         distance[k][0] = Math.pow(
@@ -306,9 +335,9 @@ const kriging = (function() {
       }
     } else {
       for (
-        (i = 0), (j = 0), (k = 0), (l = 0);
+        i = 0, j = 0, k = 0, l = 0;
         i < lags && j < (n * n - n) / 2;
-        i++, (k = 0)
+        i++, k = 0
       ) {
         while (distance[j][0] <= (i + 1) * tolerance) {
           lag[l] += distance[j][0];
@@ -334,14 +363,15 @@ const kriging = (function() {
     const A = variogram.A;
     for (i = 0; i < n; i++) {
       switch (model) {
-        case 'gaussian':
+        case "gaussian":
           X[i * 2 + 1] =
             1.0 - Math.exp(-(1.0 / A) * Math.pow(lag[i] / variogram.range, 2));
           break;
-        case 'exponential':
-          X[i * 2 + 1] = 1.0 - Math.exp(-(1.0 / A) * lag[i] / variogram.range);
+        case "exponential":
+          X[i * 2 + 1] =
+            1.0 - Math.exp((-(1.0 / A) * lag[i]) / variogram.range);
           break;
-        case 'spherical':
+        case "spherical":
           X[i * 2 + 1] =
             1.5 * (lag[i] / variogram.range) -
             0.5 * Math.pow(lag[i] / variogram.range, 3);
@@ -416,7 +446,8 @@ const kriging = (function() {
 
   // Model prediction
   kriging.predict = function(x, y, variogram) {
-    let i, k = Array(variogram.n);
+    let i;
+    const k = Array(variogram.n);
     for (i = 0; i < variogram.n; i++) {
       k[i] = variogram.model(
         Math.pow(
@@ -432,7 +463,8 @@ const kriging = (function() {
     return kriging_matrix_multiply(k, variogram.M, 1, variogram.n, 1)[0];
   };
   kriging.variance = function(x, y, variogram) {
-    let i, k = Array(variogram.n);
+    let i;
+    const k = Array(variogram.n);
     for (i = 0; i < variogram.n; i++) {
       k[i] = variogram.model(
         Math.pow(
@@ -465,7 +497,10 @@ const kriging = (function() {
 
   // Gridded matrices or contour paths
   kriging.grid = function(polygons, variogram, width) {
-    let i, j, k, n = polygons.length;
+    let i;
+    let j;
+    let k;
+    const n = polygons.length;
     if (n == 0) return;
 
     // Boundaries of polygons space
@@ -486,8 +521,10 @@ const kriging = (function() {
     }
 
     // Alloc for O(n^2) space
-    let xtarget, ytarget;
-    let a = Array(2), b = Array(2);
+    let xtarget;
+    let ytarget;
+    const a = Array(2);
+    const b = Array(2);
     const lxlim = Array(2); // Local dimensions
     const lylim = Array(2); // Local dimensions
     const x = Math.ceil((xlim[1] - xlim[0]) / width);
@@ -513,16 +550,16 @@ const kriging = (function() {
 
       // Loop through polygon subspace
       a[0] = Math.floor(
-        (lxlim[0] - (lxlim[0] - xlim[0]) % width - xlim[0]) / width
+        (lxlim[0] - ((lxlim[0] - xlim[0]) % width) - xlim[0]) / width
       );
       a[1] = Math.ceil(
-        (lxlim[1] - (lxlim[1] - xlim[1]) % width - xlim[0]) / width
+        (lxlim[1] - ((lxlim[1] - xlim[1]) % width) - xlim[0]) / width
       );
       b[0] = Math.floor(
-        (lylim[0] - (lylim[0] - ylim[0]) % width - ylim[0]) / width
+        (lylim[0] - ((lylim[0] - ylim[0]) % width) - ylim[0]) / width
       );
       b[1] = Math.ceil(
-        (lylim[1] - (lylim[1] - ylim[1]) % width - ylim[0]) / width
+        (lylim[1] - ((lylim[1] - ylim[1]) % width) - ylim[0]) / width
       );
       for (j = a[0]; j <= a[1]; j++) {
         for (k = b[0]; k <= b[1]; k++) {
@@ -545,7 +582,7 @@ const kriging = (function() {
   // Plotting on the DOM
   kriging.plot = function(canvas, grid, xlim, ylim, colors) {
     // Clear screen
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Starting boundaries
@@ -554,15 +591,20 @@ const kriging = (function() {
       ylim[1] - ylim[0],
       grid.zlim[1] - grid.zlim[0]
     ];
-    let i, j, x, y, z;
+    let i;
+    let j;
+    let x;
+    let y;
+    let z;
     const n = grid.length;
     const m = grid[0].length;
-    const wx = Math.ceil(grid.width * canvas.width / (xlim[1] - xlim[0]));
-    const wy = Math.ceil(grid.width * canvas.height / (ylim[1] - ylim[0]));
+    const wx = Math.ceil((grid.width * canvas.width) / (xlim[1] - xlim[0]));
+    const wy = Math.ceil((grid.width * canvas.height) / (ylim[1] - ylim[0]));
     for (i = 0; i < n; i++) {
       for (j = 0; j < m; j++) {
         if (grid[i][j] == undefined) continue;
-        x = canvas.width * (i * grid.width + grid.xlim[0] - xlim[0]) / range[0];
+        x =
+          (canvas.width * (i * grid.width + grid.xlim[0] - xlim[0])) / range[0];
         y =
           canvas.height *
           (1 - (j * grid.width + grid.ylim[0] - ylim[0]) / range[1]);
