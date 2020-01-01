@@ -1,23 +1,24 @@
-const Promise = require('bluebird');
-const AWS = require('aws-sdk');
-const chroma = require('chroma-js');
-const fetch = require('isomorphic-fetch');
-const d3 = Object.assign({}, require('d3-geo'), require('d3-array'));
-const Canvas = require('canvas');
-const FormData = require('form-data');
-const util = require('util');
-const Twitter = require('twitter');
-const schedule = require('node-schedule');
-const process = require('process');
-const fs = Promise.promisifyAll(require('fs'));
-const imagemin = require('imagemin');
-const imageminOptipng = require('imagemin-optipng');
-const zlib = Promise.promisifyAll(require('zlib'));
-const ua = require('universal-analytics');
-const SunCalc = require('suncalc');
-const monitoring = require('@google-cloud/monitoring');
-const kriging = require('./kriging');
-const get_water_polygons = require('./get_water');
+const Promise = require("bluebird");
+const AWS = require("aws-sdk");
+const chroma = require("chroma-js");
+const fetch = require("isomorphic-fetch");
+
+const d3 = { ...require("d3-geo"), ...require("d3-array") };
+const Canvas = require("canvas");
+const FormData = require("form-data");
+const util = require("util");
+const Twitter = require("twitter");
+const schedule = require("node-schedule");
+const process = require("process");
+const fs = Promise.promisifyAll(require("fs"));
+const imagemin = require("imagemin");
+const imageminOptipng = require("imagemin-optipng");
+const zlib = Promise.promisifyAll(require("zlib"));
+const ua = require("universal-analytics");
+const SunCalc = require("suncalc");
+const monitoring = require("@google-cloud/monitoring");
+const kriging = require("./kriging");
+const get_water_polygons = require("./get_water");
 
 const cToF = c => Math.round((c * 9.0) / 5.0 + 32);
 
@@ -26,7 +27,7 @@ const metricsGauge = metricDescriptor => {
     process.env.GOOGLE_PROJECT_ID &&
     fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)
   ) {
-    console.log('Metrics time!');
+    console.log("Metrics time!");
     const client = new monitoring.MetricServiceClient();
     const request = {
       name: client.projectPath(process.env.GOOGLE_PROJECT_ID),
@@ -39,14 +40,14 @@ const metricsGauge = metricDescriptor => {
       .then(results => {
         const descriptor = results[0];
 
-        console.log('Created custom Metric:\n');
+        console.log("Created custom Metric:\n");
         console.log(`Name: ${descriptor.displayName}`);
         console.log(`Description: ${descriptor.description}`);
         console.log(`Type: ${descriptor.type}`);
         console.log(`Kind: ${descriptor.metricKind}`);
         console.log(`Value Type: ${descriptor.valueType}`);
         console.log(`Unit: ${descriptor.unit}`);
-        console.log('Labels:');
+        console.log("Labels:");
         descriptor.labels.forEach(label => {
           console.log(
             `  ${label.key} (${label.valueType}) - ${label.description}`
@@ -54,7 +55,7 @@ const metricsGauge = metricDescriptor => {
         });
       })
       .catch(err => {
-        console.error('ERROR:', err);
+        console.error("ERROR:", err);
       });
     return value => {
       const dataPoint = {
@@ -73,7 +74,7 @@ const metricsGauge = metricDescriptor => {
           type: metricDescriptor.type
         },
         resource: {
-          type: 'global',
+          type: "global",
           labels: {
             project_id: process.env.GOOGLE_PROJECT_ID
           }
@@ -91,10 +92,10 @@ const metricsGauge = metricDescriptor => {
         client
           .createTimeSeries(tsRequest)
           .then(results => {
-            console.log('Done writing time series data.', results[0]);
+            console.log("Done writing time series data.", results[0]);
           })
           .catch(err => {
-            console.error('ERROR:', err);
+            console.error("ERROR:", err);
           });
       });
     };
@@ -107,9 +108,9 @@ const analytics = (() => {
     const ga = ua(process.env.GOOGLE_ANALYTICS_ID);
     return {
       exception: e =>
-        ga.exception(e, err => err && console.log('GA ERROR', err)),
+        ga.exception(e, err => err && console.log("GA ERROR", err)),
       event: (a, b) =>
-        ga.event(a, b, err => err && console.log('GA ERROR', err))
+        ga.event(a, b, err => err && console.log("GA ERROR", err))
     };
   }
   return {
@@ -119,7 +120,7 @@ const analytics = (() => {
 })();
 
 const tweet = (png, data) => {
-  if (process.env.CONFIG_TWEET !== 'yes') {
+  if (process.env.CONFIG_TWEET !== "yes") {
     return;
   }
   const client = new Twitter({
@@ -128,7 +129,7 @@ const tweet = (png, data) => {
     access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
     access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
   });
-  client.post('media/upload', { media: png }, (error, media) => {
+  client.post("media/upload", { media: png }, (error, media) => {
     if (!error) {
       const status = {
         status: `Temperatures in San Francisco right now: ${Math.round(
@@ -142,11 +143,11 @@ const tweet = (png, data) => {
       };
 
       client.post(
-        'statuses/update',
+        "statuses/update",
         status,
         (updateError, updateTweet, response) => {
           if (!updateError) {
-            console.log('Tweeted');
+            console.log("Tweeted");
           } else {
             console.log(updateError, response);
           }
@@ -167,11 +168,11 @@ const s3 = (() => {
 })();
 
 const gauge = metricsGauge({
-  description: 'Maps generated',
-  displayName: 'Maps generated',
-  type: 'custom.googleapis.com/maps',
-  metricKind: 'GAUGE',
-  valueType: 'INT64',
+  description: "Maps generated",
+  displayName: "Maps generated",
+  type: "custom.googleapis.com/maps",
+  metricKind: "GAUGE",
+  valueType: "INT64",
   labels: []
 });
 
@@ -185,41 +186,41 @@ const s3Upload = (
   Promise.all([
     s3
       .putObject({
-        Bucket: 'tempmap',
+        Bucket: "tempmap",
         Key: `${filenameBase}.png`,
         Body: pngBuffer,
-        ContentType: 'image/png',
-        ACL: 'public-read'
+        ContentType: "image/png",
+        ACL: "public-read"
       })
       .promise(),
     s3
       .putObject({
-        Bucket: 'tempmap',
+        Bucket: "tempmap",
         Key: `${summaryFilename}.json`,
         Body: gzipJson,
-        ContentEncoding: 'gzip',
-        ContentType: 'application/json',
-        ACL: 'public-read'
+        ContentEncoding: "gzip",
+        ContentType: "application/json",
+        ACL: "public-read"
       })
       .promise(),
     s3
       .putObject({
-        Bucket: 'tempmap',
+        Bucket: "tempmap",
         Key: `${filenameBase}.json`,
         Body: gzipJson,
-        ContentEncoding: 'gzip',
-        ContentType: 'application/json',
-        ACL: 'public-read'
+        ContentEncoding: "gzip",
+        ContentType: "application/json",
+        ACL: "public-read"
       })
       .promise()
   ])
     .then(() => {
-      analytics.event('Upload', configData.filename);
+      analytics.event("Upload", configData.filename);
       console.log(`${summaryFilename}: Uploaded`);
     })
     .catch(err => {
       analytics.exception(`${summaryFilename}: ${err.message}`);
-      console.log('Upload error', err);
+      console.log("Upload error", err);
     });
 
 const readConfig = configName =>
@@ -227,13 +228,13 @@ const readConfig = configName =>
 
 const token = () => {
   const form = new FormData();
-  form.append('grant_type', 'refresh_token');
-  form.append('refresh_token', process.env.NETATMO_REFRESH_TOKEN);
-  form.append('client_id', process.env.NETATMO_CLIENT_ID);
-  form.append('client_secret', process.env.NETATMO_CLIENT_SECRET);
-  const url = util.format('%s/oauth2/token', process.env.NETATMO_BASE_URL);
+  form.append("grant_type", "refresh_token");
+  form.append("refresh_token", process.env.NETATMO_REFRESH_TOKEN);
+  form.append("client_id", process.env.NETATMO_CLIENT_ID);
+  form.append("client_secret", process.env.NETATMO_CLIENT_SECRET);
+  const url = util.format("%s/oauth2/token", process.env.NETATMO_BASE_URL);
   return fetch(url, {
-    method: 'POST',
+    method: "POST",
     body: form
   })
     .then(result => result.json())
@@ -253,7 +254,7 @@ const getDataModes = {
         const rains = [];
         result.body.forEach(r => {
           Object.values(r.measures).forEach(measure => {
-            if ('rain_60min' in measure) {
+            if ("rain_60min" in measure) {
               const ll = [r.place.location[0], r.place.location[1]];
               const px = ll;
               rains.push([px[0], px[1], measure.rain_60min]);
@@ -275,8 +276,8 @@ const getDataModes = {
         const temps = [];
         result.body.forEach(r => {
           Object.values(r.measures).forEach(measure => {
-            if ('type' in measure) {
-              const idx = measure.type.indexOf('temperature');
+            if ("type" in measure) {
+              const idx = measure.type.indexOf("temperature");
               if (idx !== -1) {
                 const ll = [r.place.location[0], r.place.location[1]];
                 const px = ll;
@@ -297,16 +298,16 @@ const getData = (mode, ...args) => getDataModes[mode](...args);
 
 const colors = {
   temperature: chroma
-    .scale('Spectral')
-    .mode('lab')
+    .scale("Spectral")
+    .mode("lab")
     .domain([32, -10]),
   rain: chroma
-    .scale(['#cbe6a3', '#05445c'])
-    .mode('lab')
+    .scale(["#cbe6a3", "#05445c"])
+    .mode("lab")
     .domain([0, 5])
 };
 const colorFor = (mode, c) => {
-  if (mode === 'temperature') {
+  if (mode === "temperature") {
     return colors.temperature(Math.round(c)).rgb();
   }
   return colors[mode](Math.round(c * 4) / 4.0).rgb();
@@ -333,7 +334,7 @@ const trainKriging = (data, projection) => {
   const x = points.map(d => d[0]);
   const y = points.map(d => d[1]);
   const t = points.map(d => d[2]);
-  const model = 'exponential';
+  const model = "exponential";
   const sigma2 = 0;
   const alpha = 100;
   return kriging.train(t, x, y, model, sigma2, alpha);
@@ -341,19 +342,19 @@ const trainKriging = (data, projection) => {
 
 const makeProjection = (width, height, frame) =>
   d3.geoMercator().fitSize([width, height], {
-    type: 'FeatureCollection',
+    type: "FeatureCollection",
     features: [
       {
-        type: 'Feature',
+        type: "Feature",
         geometry: {
-          type: 'Point',
+          type: "Point",
           coordinates: [frame.sw[1], frame.sw[0]]
         }
       },
       {
-        type: 'Feature',
+        type: "Feature",
         geometry: {
-          type: 'Point',
+          type: "Point",
           coordinates: [frame.ne[1], frame.ne[0]]
         }
       }
@@ -368,7 +369,7 @@ console.log(
 */
 
 const generateMap = async (configName, accessToken, gaugeNumber) => {
-  const modes = ['temperature', 'rain'];
+  const modes = ["temperature", "rain"];
   const configData = await readConfig(configName);
   const { places, frame, width, height } = configData;
 
@@ -381,12 +382,12 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
 
   return Promise.map(modes, async mode => {
     try {
-      console.log('Generating', configName, mode);
+      console.log("Generating", configName, mode);
 
       const data = await getData(mode, accessToken, frame);
 
       const canvas = new Canvas(width, height);
-      const context = canvas.getContext('2d');
+      const context = canvas.getContext("2d");
       const proj = makeProjection(width, height, frame);
       const canvasData = context.getImageData(0, 0, width, height);
 
@@ -413,13 +414,13 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
           canvasData.data[index + 3] = 255;
         }
       }
-      if (process.env.CONFIG_SKIP_TEMPERATURES !== 'yes') {
+      if (process.env.CONFIG_SKIP_TEMPERATURES !== "yes") {
         context.putImageData(canvasData, 0, 0);
       }
 
-      drawGeoJson(context, geoJson, proj, 'lightblue');
+      drawGeoJson(context, geoJson, proj, "lightblue");
 
-      const suffix = mode === 'temperature' ? '' : `-${mode}`;
+      const suffix = mode === "temperature" ? "" : `-${mode}`;
       const summaryFilename = `${configData.filename}${suffix}`;
       const filenameBase = `${summaryFilename}-${new Date().toISOString()}`;
 
@@ -435,11 +436,12 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
         },
         places: places.map(p => {
           const xy = proj([p.latlon[1], p.latlon[0]]);
-          return Object.assign({}, p, {
+          return {
+            ...p,
             temp_in_c: kriging.predict(xy[0], xy[1], variogram).toFixed(1),
             x: xy[0].toFixed(0),
             y: xy[1].toFixed(1)
-          });
+          };
         }),
         timestamp: new Date().toISOString(),
         pod: process.env.MY_POD_NAME,
@@ -454,10 +456,10 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
       const pngBuffer = await imagemin.buffer(canvas.toBuffer(), {
         use: [imageminOptipng()]
       });
-      if (configName === 'sf' && mode === 'temperature') {
+      if (configName === "sf" && mode === "temperature") {
         tweet(pngBuffer, output);
       }
-      if (process.env.CONFIG_S3_UPLOAD === 'yes') {
+      if (process.env.CONFIG_S3_UPLOAD === "yes") {
         s3Upload(
           configData,
           summaryFilename,
@@ -475,7 +477,7 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
         ]).then(() => console.log(`${configName}: Written files`));
       }
     } catch (e) {
-      console.log('Error', e);
+      console.log("Error", e);
     }
   });
 };
@@ -483,18 +485,18 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
 const generate = async () => {
   const t = await token();
   let n = 0;
-  Promise.each(['sf', 'eastbay', 'northbay', 'southbay', 'bayarea'], config => {
+  Promise.each(["sf", "eastbay", "northbay", "southbay", "bayarea"], config => {
     n += 1;
     return generateMap(config, t, n);
   });
 };
 
-if (process.env.CONFIG_SCHEDULE === 'yes') {
-  console.log('Running in scheduler mode');
-  schedule.scheduleJob('0 * * * *', () => {
+if (process.env.CONFIG_SCHEDULE === "yes") {
+  console.log("Running in scheduler mode");
+  schedule.scheduleJob("0 * * * *", () => {
     generate();
   });
 } else {
-  console.log('Running in immediate mode');
+  console.log("Running in immediate mode");
   generate();
 }
