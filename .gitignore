@@ -26,3 +26,5 @@ out.mp4
 frame*.png
 output
 local-secrets
+
+production-env.json

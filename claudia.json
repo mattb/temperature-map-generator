@@ -1,0 +1,7 @@
+{
+  "lambda": {
+    "role": "temperature-map-generator-executor",
+    "name": "temperature-map-generator",
+    "region": "us-east-1"
+  }
+}

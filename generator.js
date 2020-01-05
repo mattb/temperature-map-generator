@@ -4,7 +4,6 @@ const chroma = require("chroma-js");
 const fetch = require("isomorphic-fetch");
 
 const d3 = require("d3-geo");
-const { Canvas } = require("canvas");
 const FormData = require("form-data");
 const util = require("util");
 const Twitter = require("twitter");
@@ -153,15 +152,16 @@ const tweet = (png, data) => {
   });
 };
 
-const s3 = (() => {
-  const credentials = new AWS.Credentials(
-    process.env.AWS_ACCESS_KEY_ID,
-    process.env.AWS_SECRET_ACCESS_KEY
-  );
-  const config = new AWS.Config();
-  config.update({ credentials });
-  return new AWS.S3(config);
-})();
+const s3 = new AWS.S3();
+
+AWS.config.getCredentials(err => {
+  if (err) {
+    console.log(err.stack);
+  } else {
+    console.log(" Access key:", AWS.config.credentials.accessKeyId);
+    console.log("Secret access key:", AWS.config.credentials.secretAccessKey);
+  }
+});
 
 const gauge = metricsGauge({
   description: "Maps generated",
@@ -248,6 +248,11 @@ const getDataModes = {
       .then(r => r.json())
       .then(result => {
         const rains = [];
+        if (result.status > 300) {
+          const error = new Error(result.statusText);
+          error.response = result;
+          throw error;
+        }
         result.body.forEach(r => {
           Object.values(r.measures).forEach(measure => {
             if ("rain_60min" in measure) {
@@ -266,10 +271,21 @@ const getDataModes = {
     }/api/getpublicdata?access_token=${accessToken}&lat_ne=${
       frame.ne[0]
     }&lon_ne=${frame.ne[1]}&lat_sw=${frame.sw[0]}&lon_sw=${frame.sw[1]}`;
+    console.log(`Accessing Netatmo API at ${url}`);
     return fetch(url)
       .then(r => r.json())
       .then(result => {
         const temps = [];
+        if (result.status > 300) {
+          const error = new Error(result.statusText);
+          error.response = result;
+          throw error;
+        }
+        if (!result.body) {
+          const error = new Error("No body in Netatmo result");
+          error.response = result;
+          throw error;
+        }
         result.body.forEach(r => {
           Object.values(r.measures).forEach(measure => {
             if ("type" in measure) {
@@ -382,6 +398,7 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
 
       const data = await getData(mode, accessToken, frame);
 
+      const { Canvas } = require("canvas");
       const canvas = new Canvas(width, height);
       const context = canvas.getContext("2d");
       const proj = makeProjection(width, height, frame);
@@ -473,7 +490,7 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
         ]).then(() => console.log(`${configName}: Written files`));
       }
     } catch (e) {
-      console.log("Error", e);
+      console.log("Error in", configName, mode, e);
     }
   });
 };
@@ -481,10 +498,13 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
 const generate = async () => {
   const t = await token();
   let n = 0;
-  Promise.each(["sf", "eastbay", "northbay", "southbay", "bayarea"], config => {
-    n += 1;
-    return generateMap(config, t, n);
-  });
+  return Promise.each(
+    ["sf", "eastbay", "northbay", "southbay", "bayarea"],
+    config => {
+      n += 1;
+      return generateMap(config, t, n);
+    }
+  );
 };
 
 module.exports = { generate };

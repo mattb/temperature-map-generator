@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "1",
+      "Action": [
+        "s3:Put*",
+        "s3:Get*",
+        "s3:List*",
+        "s3:Delete*"
+      ],
+      "Effect": "Allow",
+      "Resource": [
+        "arn:aws:s3:::tempmap",
+        "arn:aws:s3:::tempmap/*"
+      ]
+    },
+    {
+      "Sid": "2",
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "*"
+    }
+  ]
+}
