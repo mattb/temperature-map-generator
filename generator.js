@@ -462,7 +462,8 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
         min_in_c: predictions.reduce((a, b) => Math.min(a, b)).toFixed(1),
         max_in_c: predictions.reduce((a, b) => Math.max(a, b)).toFixed(1),
         png: `${filenameBase}.png`,
-        sun: SunCalc.getTimes(new Date(), frame.sw[0], frame.sw[1])
+        sun: SunCalc.getTimes(new Date(), frame.sw[0], frame.sw[1]),
+        lambda: "yes"
       };
 
       const gzipJson = await zlib.gzipAsync(JSON.stringify(output, null, 2));
