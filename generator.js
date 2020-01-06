@@ -1,5 +1,5 @@
 const Promise = require("bluebird");
-const AWS = require("aws-sdk");
+const AWS = require("aws-sdk"); // eslint-disable-line import/no-extraneous-dependencies
 const chroma = require("chroma-js");
 const fetch = require("isomorphic-fetch");
 
@@ -156,10 +156,7 @@ const s3 = new AWS.S3();
 
 AWS.config.getCredentials(err => {
   if (err) {
-    console.log(err.stack);
-  } else {
-    console.log(" Access key:", AWS.config.credentials.accessKeyId);
-    console.log("Secret access key:", AWS.config.credentials.secretAccessKey);
+    console.log("Credentials error", err.stack);
   }
 });
 
@@ -398,7 +395,9 @@ const generateMap = async (configName, accessToken, gaugeNumber) => {
 
       const data = await getData(mode, accessToken, frame);
 
-      const { Canvas } = require("canvas");
+      // require Canvas from optional dependencies so that claudia/lambda can parse it during upload without barfing
+      // (the dependency is actually in the lambda layer) https://github.com/jwerre/node-canvas-lambda
+      const { Canvas } = require("canvas"); // eslint-disable-line import/no-extraneous-dependencies, global-require
       const canvas = new Canvas(width, height);
       const context = canvas.getContext("2d");
       const proj = makeProjection(width, height, frame);
