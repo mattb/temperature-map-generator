@@ -29,6 +29,13 @@
       ]
     },
     {
+      "name": "Cupertino",
+      "latlon": [
+        37.334722, 
+        -122.008889
+      ]
+    },
+    {
       "name": "Mountain View",
       "latlon": [
         37.386052,
