@@ -46,7 +46,7 @@
     "prettier": "^1.13.0"
   },
   "optionalDependencies": {
-    "aws-sdk": "^2.597.0",
+    "aws-sdk": "^2.814.0",
     "canvas": "^2.6.1"
   }
 }
